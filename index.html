@@ -5,316 +5,187 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>NetAdmin Academy</title>
   <link rel="stylesheet" href="css/style.css"/>
-  <link rel="stylesheet" href="css/room.css"/>
+  <link rel="stylesheet" href="css/scene.css"/>
 </head>
 <body>
 
-<!-- ═══════════════ LOADING ═══════════════ -->
+<!-- ══════════ LOADING ══════════ -->
 <div id="loading-screen">
-  <div class="loading-content">
-    <div class="load-logo">⚡</div>
-    <div class="load-title">NetAdmin Academy</div>
-    <div class="load-sub">Game Edukasi Server & Jaringan · SMK TKJ</div>
-    <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
-    <div class="load-msg" id="load-msg">Memuat ruang server...</div>
+  <div class="ld-wrap">
+    <div class="ld-logo">⚡</div>
+    <h1 class="ld-title">NetAdmin Academy</h1>
+    <p class="ld-sub">Game Edukasi Server &amp; Jaringan · SMK TKJ</p>
+    <div class="ld-bar"><div class="ld-fill" id="ld-fill"></div></div>
+    <p class="ld-msg" id="ld-msg">Menyalakan server...</p>
   </div>
 </div>
 
-<!-- ═══════════════ MAIN MENU ═══════════════ -->
+<!-- ══════════ MAIN MENU ══════════ -->
 <div id="main-menu" class="hidden">
-  <div class="menu-particles" id="particles"></div>
-  <div class="menu-center">
-    <div class="menu-glow"></div>
-    <div class="menu-logo-wrap">
-      <div class="menu-icon-big">🖥️</div>
-      <h1 class="menu-title">NetAdmin<span>Academy</span></h1>
-      <p class="menu-tagline">Jelajahi Ruang Server · Selesaikan Misi · Jadi NetAdmin Hero</p>
+  <div class="mm-bg">
+    <div class="mm-stars" id="mm-stars"></div>
+    <div class="mm-glow-1"></div>
+    <div class="mm-glow-2"></div>
+  </div>
+  <div class="mm-card">
+    <div class="mm-icon">🖥️</div>
+    <h1 class="mm-title">NetAdmin<span>Academy</span></h1>
+    <p class="mm-desc">Masuki ruang server · Temui klien · Selesaikan misi jaringan</p>
+    <div class="mm-btns">
+      <button class="btn-main" onclick="startGame()">▶ Mulai Petualangan</button>
+      <button class="btn-sub"  onclick="showHowTo()">📖 Cara Bermain</button>
+      <button class="btn-sub"  onclick="showCredits()">ℹ️ Tentang</button>
     </div>
-    <div class="menu-btns">
-      <button class="mbtn mbtn-play" onclick="startGame()">
-        <span class="mbtn-icon">▶</span> Mulai Petualangan
-      </button>
-      <button class="mbtn mbtn-outline" onclick="showTutorial()">
-        <span class="mbtn-icon">📖</span> Cara Bermain
-      </button>
-      <button class="mbtn mbtn-ghost" onclick="showCredits()">
-        <span class="mbtn-icon">ℹ️</span> Tentang
-      </button>
-    </div>
-    <div class="menu-footer">SMK TKJ · Netville City · v2.0</div>
+    <p class="mm-ver">SMK TKJ · Netville City · v3.0</p>
   </div>
 </div>
 
-<!-- ═══════════════ TUTORIAL ═══════════════ -->
-<div id="tutorial-screen" class="hidden">
-  <div class="tutorial-box">
+<!-- ══════════ HOW TO PLAY ══════════ -->
+<div id="howto-screen" class="hidden overlay-screen">
+  <div class="info-card">
     <h2>📖 Cara Bermain</h2>
-    <div class="tut-grid">
-      <div class="tut-item">
-        <div class="tut-icon">🖱️</div>
-        <div class="tut-text"><strong>Drag Kiri/Kanan</strong><br/>Geser untuk melihat ruang server 360°</div>
-      </div>
-      <div class="tut-item">
-        <div class="tut-icon">⌨️</div>
-        <div class="tut-text"><strong>Tombol ← →</strong><br/>Navigasi dengan keyboard</div>
-      </div>
-      <div class="tut-item">
-        <div class="tut-icon">🔍</div>
-        <div class="tut-text"><strong>Klik Objek</strong><br/>Inspeksi peralatan server</div>
-      </div>
-      <div class="tut-item">
-        <div class="tut-icon">💻</div>
-        <div class="tut-text"><strong>Terminal</strong><br/>Ketik command Linux nyata</div>
-      </div>
-      <div class="tut-item">
-        <div class="tut-icon">📋</div>
-        <div class="tut-text"><strong>Objektif</strong><br/>Selesaikan semua tugas untuk naik level</div>
-      </div>
-      <div class="tut-item">
-        <div class="tut-icon">💡</div>
-        <div class="tut-text"><strong>Hint</strong><br/>Minta petunjuk jika kebingungan</div>
-      </div>
+    <div class="howto-list">
+      <div class="howto-item"><span class="hi-num">1</span><div><strong>Jelajahi Ruangan</strong><br/>Klik panah atau tombol navigasi untuk berpindah lokasi</div></div>
+      <div class="howto-item"><span class="hi-num">2</span><div><strong>Buka Pintu</strong><br/>Klik pintu untuk membukanya dan masuk ke ruangan</div></div>
+      <div class="howto-item"><span class="hi-num">3</span><div><strong>Temui Karakter</strong><br/>Klik karakter untuk bicara dan dapat misi</div></div>
+      <div class="howto-item"><span class="hi-num">4</span><div><strong>Inspeksi Objek</strong><br/>Klik objek di ruangan untuk mendapat info dan petunjuk</div></div>
+      <div class="howto-item"><span class="hi-num">5</span><div><strong>Gunakan Terminal</strong><br/>Ketik command Linux nyata untuk selesaikan masalah</div></div>
+      <div class="howto-item"><span class="hi-num">6</span><div><strong>Selesaikan Misi</strong><br/>Checklist objektif harus semua centang untuk lanjut</div></div>
     </div>
-    <button class="mbtn mbtn-play" onclick="hideTutorial()" style="margin-top:1.5rem">
-      ✓ Mengerti, Mulai!
-    </button>
+    <button class="btn-main" onclick="hideHowTo()">Mengerti! ✓</button>
   </div>
 </div>
 
-<!-- ═══════════════ GAME SCREEN ═══════════════ -->
-<div id="game-screen" class="hidden">
-
-  <!-- HUD TOP -->
-  <div id="hud">
-    <div class="hud-l">
-      <button class="hud-btn" onclick="goMainMenu()">☰</button>
-      <div class="hud-info">
-        <span id="hud-level" class="hud-level">Level 1</span>
-        <span id="hud-mission" class="hud-mission">—</span>
-      </div>
-    </div>
-    <div class="hud-c">
-      <div class="compass" id="compass">
-        <div class="compass-bar">
-          <span class="compass-dir">◀ BARAT</span>
-          <span class="compass-dir active">TENGAH</span>
-          <span class="compass-dir">TIMUR ▶</span>
-        </div>
-        <div class="compass-needle" id="compass-needle"></div>
-      </div>
-    </div>
-    <div class="hud-r">
-      <div class="hud-stat"><span class="hud-stat-icon">⏱️</span><span id="timer">00:00</span></div>
-      <div class="hud-stat"><span class="hud-stat-icon">⭐</span><span id="score">0</span></div>
-      <button class="hud-hint-btn" id="hint-btn" onclick="useHint()">💡 Hint <span id="hint-count">(3)</span></button>
-    </div>
-  </div>
-
-  <!-- PANORAMA ROOM -->
-  <div id="panorama-wrap">
-    <div id="panorama-scene">
-
-      <!-- LAYER: SKY/CEILING -->
-      <div class="layer layer-ceiling" id="layer-ceiling">
-        <div class="ceiling-lights">
-          <div class="ceil-light"></div>
-          <div class="ceil-light"></div>
-          <div class="ceil-light"></div>
-          <div class="ceil-light"></div>
-          <div class="ceil-light"></div>
-          <div class="ceil-light"></div>
-        </div>
-        <div class="ceiling-cable-tray"></div>
-      </div>
-
-      <!-- LAYER: BACKGROUND -->
-      <div class="layer layer-bg" id="layer-bg">
-        <div class="bg-wall"></div>
-        <div class="bg-grid"></div>
-      </div>
-
-      <!-- LAYER: MID (objects far) -->
-      <div class="layer layer-mid" id="layer-mid">
-        <!-- Server racks -->
-        <div class="rack rack-1" style="left:5%">
-          <div class="rack-unit"></div><div class="rack-unit blink-slow"></div>
-          <div class="rack-unit"></div><div class="rack-unit blink-fast"></div>
-          <div class="rack-unit"></div><div class="rack-unit"></div>
-          <div class="rack-label">RACK-A</div>
-        </div>
-        <div class="rack rack-2" style="left:28%">
-          <div class="rack-unit blink-fast"></div><div class="rack-unit"></div>
-          <div class="rack-unit blink-slow"></div><div class="rack-unit"></div>
-          <div class="rack-unit blink-fast"></div><div class="rack-unit"></div>
-          <div class="rack-label">RACK-B</div>
-        </div>
-        <div class="rack rack-3" style="left:52%">
-          <div class="rack-unit"></div><div class="rack-unit blink-slow"></div>
-          <div class="rack-unit blink-fast"></div><div class="rack-unit"></div>
-          <div class="rack-unit"></div><div class="rack-unit blink-fast"></div>
-          <div class="rack-label">RACK-C</div>
-        </div>
-        <div class="rack rack-4" style="left:76%">
-          <div class="rack-unit blink-slow"></div><div class="rack-unit"></div>
-          <div class="rack-unit"></div><div class="rack-unit blink-fast"></div>
-          <div class="rack-unit blink-slow"></div><div class="rack-unit"></div>
-          <div class="rack-label">RACK-D</div>
-        </div>
-        <!-- Cables -->
-        <div class="cables">
-          <div class="cable cable-blue" style="left:10%;height:120px;top:30%"></div>
-          <div class="cable cable-green" style="left:35%;height:90px;top:25%"></div>
-          <div class="cable cable-yellow" style="left:60%;height:140px;top:20%"></div>
-          <div class="cable cable-red" style="left:80%;height:100px;top:28%"></div>
-        </div>
-      </div>
-
-      <!-- LAYER: FRONT (clickable objects) -->
-      <div class="layer layer-front" id="layer-front">
-        <!-- Objects will be injected by JS -->
-      </div>
-
-      <!-- LAYER: FLOOR -->
-      <div class="layer layer-floor" id="layer-floor">
-        <div class="floor-tiles"></div>
-        <div class="floor-reflection"></div>
-      </div>
-
-    </div>
-
-    <!-- Drag hint -->
-    <div class="drag-hint" id="drag-hint">
-      <span>◀ geser untuk menjelajah ▶</span>
-    </div>
-
-    <!-- Edge indicators -->
-    <div class="edge-left" id="edge-left">❮</div>
-    <div class="edge-right" id="edge-right">❯</div>
-
-  </div>
-
-  <!-- INSPECT POPUP -->
-  <div id="inspect-popup" class="hidden">
-    <div class="inspect-card">
-      <div class="inspect-top">
-        <div class="inspect-icon" id="inspect-icon">🖥️</div>
-        <div>
-          <div class="inspect-title" id="inspect-title">Objek</div>
-          <div class="inspect-status" id="inspect-status-wrap">
-            <span class="istatus" id="inspect-status">—</span>
-          </div>
-        </div>
-        <button class="inspect-close" onclick="closeInspect()">✕</button>
-      </div>
-      <div class="inspect-body" id="inspect-body"></div>
-      <div class="inspect-theory hidden" id="inspect-theory">
-        <div class="theory-title">📚 Materi Singkat</div>
-        <div class="theory-body" id="theory-body"></div>
-      </div>
-      <button class="inspect-action hidden" id="inspect-action">
-        Gunakan Terminal 💻
-      </button>
-    </div>
-  </div>
-
-  <!-- TERMINAL -->
-  <div id="terminal-wrap" class="hidden">
-    <div id="terminal">
-      <div class="term-header">
-        <div class="term-dots">
-          <span class="dot dot-r"></span>
-          <span class="dot dot-y"></span>
-          <span class="dot dot-g"></span>
-        </div>
-        <span class="term-title">root@netville-server: ~</span>
-        <button class="term-x" onclick="closeTerminal()">✕</button>
-      </div>
-      <div class="term-output" id="term-output"></div>
-      <div class="term-input-row">
-        <span class="term-prompt">root@netville:~# </span>
-        <input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="ketik command..."/>
-      </div>
-    </div>
-  </div>
-
-  <!-- OBJECTIVE PANEL -->
-  <div id="obj-panel">
-    <div class="obj-header">
-      <span>📋 Misi</span>
-      <button onclick="toggleObjPanel()" id="obj-toggle">▼</button>
-    </div>
-    <div id="obj-body">
-      <ul id="obj-list"></ul>
-      <div class="obj-actions">
-        <button class="act-btn act-terminal" onclick="openTerminal()">💻 Terminal</button>
-        <button class="act-btn act-map" onclick="toggleMinimap()">🗺️ Minimap</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MINIMAP -->
-  <div id="minimap" class="hidden">
-    <div class="minimap-label">Peta Ruangan</div>
-    <div class="minimap-room">
-      <div class="minimap-cam" id="minimap-cam"></div>
-      <div class="minimap-obj" style="left:15%">📦</div>
-      <div class="minimap-obj" style="left:35%">🖥️</div>
-      <div class="minimap-obj" style="left:55%">📡</div>
-      <div class="minimap-obj" style="left:75%">🔥</div>
-    </div>
-  </div>
-
-  <!-- DIALOG BOX -->
-  <div id="dialog-box" class="hidden">
-    <div class="dlg-char">
-      <div class="dlg-avatar" id="dlg-avatar"></div>
-      <div class="dlg-name" id="dlg-name"></div>
-    </div>
-    <div class="dlg-bubble">
-      <p id="dlg-text"></p>
-      <button class="dlg-next" id="dlg-next" onclick="nextDialog()">Lanjut ▶</button>
-    </div>
-  </div>
-
-  <!-- NOTIFICATION -->
-  <div id="notif" class="hidden"></div>
-
-</div>
-
-<!-- ═══════════════ LEVEL COMPLETE ═══════════════ -->
-<div id="level-complete" class="hidden">
-  <div class="lc-box">
-    <div class="lc-stars">⭐⭐⭐</div>
-    <div class="lc-icon" id="lc-icon">🏆</div>
-    <h2 class="lc-title">Misi Selesai!</h2>
-    <div class="lc-badge" id="lc-badge"></div>
-    <div class="lc-stats">
-      <div class="lc-stat"><span>⭐ Skor</span><strong id="lc-score">0</strong></div>
-      <div class="lc-stat"><span>⏱️ Waktu</span><strong id="lc-time">00:00</strong></div>
-      <div class="lc-stat"><span>💡 Hint</span><strong id="lc-hints">0x</strong></div>
-    </div>
-    <button class="mbtn mbtn-play" onclick="nextLevel()">Level Berikutnya ▶</button>
-  </div>
-</div>
-
-<!-- ═══════════════ CREDITS ═══════════════ -->
-<div id="credits-screen" class="hidden">
-  <div class="cred-box">
+<!-- ══════════ CREDITS ══════════ -->
+<div id="credits-screen" class="hidden overlay-screen">
+  <div class="info-card">
     <h2>⚡ NetAdmin Academy</h2>
-    <p>Game Edukasi Server & Jaringan Interaktif</p>
+    <p>Game Edukasi First-Person Adventure</p>
     <p>untuk Siswa SMK Jurusan TKJ</p>
     <hr/>
     <p>📚 Materi: Administrasi Server Linux</p>
     <p>🎯 Kompetensi: TKJ / SIJA</p>
-    <p>🏫 Netville City IT Solutions</p>
-    <p>🎮 Engine: Panorama 360° + Terminal Virtual</p>
-    <button class="mbtn mbtn-outline" onclick="hideCredits()" style="margin-top:1rem">← Kembali</button>
+    <p>🏙️ Setting: Kota Netville</p>
+    <button class="btn-sub" onclick="hideCredits()" style="margin-top:1rem">← Kembali</button>
+  </div>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div id="game-screen" class="hidden">
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-l">
+      <button class="hud-back" onclick="goMenu()" title="Menu">☰</button>
+      <div>
+        <div id="hud-lv">Level 1</div>
+        <div id="hud-ms">—</div>
+      </div>
+    </div>
+    <div class="hud-r">
+      <div class="hud-chip">⏱ <span id="hud-time">00:00</span></div>
+      <div class="hud-chip">⭐ <span id="hud-score">0</span></div>
+      <button class="hud-hint" id="hud-hint" onclick="useHint()">💡 <span id="hint-left">3</span></button>
+    </div>
+  </div>
+
+  <!-- WORLD — scene renders here -->
+  <div id="world">
+    <div id="scene-wrap">
+      <!-- Scene content injected by JS -->
+    </div>
+
+    <!-- Navigation arrows -->
+    <button class="nav-arrow nav-left  hidden" id="nav-left"  onclick="navLeft()">❮</button>
+    <button class="nav-arrow nav-right hidden" id="nav-right" onclick="navRight()">❯</button>
+    <button class="nav-arrow nav-back  hidden" id="nav-back"  onclick="navBack()">↩ Keluar</button>
+  </div>
+
+  <!-- DIALOG BOX -->
+  <div id="dialog-box" class="hidden">
+    <div class="dlg-left">
+      <div class="dlg-ava" id="dlg-ava"></div>
+      <div class="dlg-who" id="dlg-who"></div>
+    </div>
+    <div class="dlg-right">
+      <p id="dlg-txt"></p>
+      <button class="dlg-btn" onclick="advanceDialog()">Lanjut ▶</button>
+    </div>
+  </div>
+
+  <!-- INSPECT CARD -->
+  <div id="inspect-box" class="hidden">
+    <div class="ins-card">
+      <div class="ins-head">
+        <span class="ins-ico" id="ins-ico"></span>
+        <div>
+          <div class="ins-title" id="ins-title"></div>
+          <span class="ins-badge" id="ins-badge"></span>
+        </div>
+        <button class="ins-x" onclick="closeInspect()">✕</button>
+      </div>
+      <p class="ins-body" id="ins-body"></p>
+      <div class="ins-theory hidden" id="ins-theory">
+        <div class="th-label">📚 Materi Singkat</div>
+        <p id="th-txt"></p>
+      </div>
+      <button class="ins-action hidden" id="ins-action">💻 Buka Terminal</button>
+    </div>
+  </div>
+
+  <!-- TERMINAL -->
+  <div id="term-overlay" class="hidden">
+    <div id="terminal">
+      <div class="trm-head">
+        <span class="trm-dots"><i></i><i></i><i></i></span>
+        <span class="trm-title">root@netville-server: ~</span>
+        <button onclick="closeTerm()">✕</button>
+      </div>
+      <div id="trm-out"></div>
+      <div class="trm-row">
+        <span class="trm-ps">root@netville:~# </span>
+        <input id="trm-in" type="text" autocomplete="off" spellcheck="false"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBJECTIVES -->
+  <div id="obj-panel">
+    <div class="obj-ttl" onclick="toggleObj()">
+      📋 Misi <span id="obj-tog">▾</span>
+    </div>
+    <div id="obj-inner">
+      <ul id="obj-ul"></ul>
+      <button class="obj-term-btn" onclick="openTerm()">💻 Terminal</button>
+    </div>
+  </div>
+
+  <!-- LOCATION LABEL -->
+  <div id="loc-label" class="hidden"></div>
+
+  <!-- NOTIF -->
+  <div id="notif" class="hidden"></div>
+
+</div><!-- /game-screen -->
+
+<!-- ══════════ LEVEL COMPLETE ══════════ -->
+<div id="lvl-complete" class="hidden">
+  <div class="lc-card">
+    <div class="lc-burst" id="lc-burst">🏆</div>
+    <h2>Misi Berhasil!</h2>
+    <div class="lc-badge" id="lc-badge-txt"></div>
+    <div class="lc-row">
+      <div class="lc-stat"><span>⭐ Skor</span><b id="lc-sc">0</b></div>
+      <div class="lc-stat"><span>⏱ Waktu</span><b id="lc-tm">—</b></div>
+      <div class="lc-stat"><span>💡 Hint</span><b id="lc-ht">0x</b></div>
+    </div>
+    <button class="btn-main" onclick="nextLevel()">Level Berikutnya ▶</button>
   </div>
 </div>
 
 <script src="js/scenes.js"></script>
 <script src="js/terminal.js"></script>
-<script src="js/panorama.js"></script>
+<script src="js/engine.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
