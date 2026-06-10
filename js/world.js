@@ -71,19 +71,20 @@ const World = (() => {
   // ─────────────────────────────────────────
   function setupControls(canvas) {
     function requestLock() {
-      if (isUIOpen()) return;
+      if (isUIOpen() || !gameActive()) return;
       canvas.requestPointerLock();
     }
     canvas.addEventListener('click', requestLock);
-
-    // Also allow clicking the overlay to start
-    const cts = document.getElementById('click-to-start');
-    if (cts) cts.addEventListener('click', requestLock);
+    document.getElementById('click-to-start').addEventListener('click', requestLock);
 
     document.addEventListener('pointerlockchange', () => {
       pointerLocked = document.pointerLockElement === canvas;
       const el = document.getElementById('click-to-start');
-      if (el) el.style.display = pointerLocked ? 'none' : (gameActive() ? 'flex' : 'none');
+      if (el) {
+        // Only show overlay if game is active AND no UI panel is open
+        const showOverlay = !pointerLocked && gameActive() && !isUIOpen();
+        el.style.display = showOverlay ? 'flex' : 'none';
+      }
       const ch = document.getElementById('crosshair');
       if (ch) ch.classList.toggle('hidden', !pointerLocked);
     });

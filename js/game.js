@@ -107,7 +107,7 @@ function loadLevel(idx) {
     const srDef = currentLevel.scenes.serverroom;
     if (srDef && srDef.dialogOnEnter) {
       const dlg = currentLevel.dialogs[srDef.dialogOnEnter];
-      if (dlg) setTimeout(() => { World.releasePointer(); showDialog(dlg); }, 800);
+      if (dlg) setTimeout(() => showDialog(dlg), 800);
     }
   });
 
@@ -118,7 +118,7 @@ function loadLevel(idx) {
   const lobbyDef = currentLevel.scenes.lobby;
   if (lobbyDef && lobbyDef.dialogOnEnter) {
     const dlg = currentLevel.dialogs[lobbyDef.dialogOnEnter];
-    if (dlg) setTimeout(() => { World.releasePointer(); showDialog(dlg); }, 1200);
+    if (dlg) setTimeout(() => showDialog(dlg), 1200);
   }
 
   startTimer();
