@@ -149,10 +149,30 @@ const World = (() => {
   }
 
   // ─────────────────────────────────────────
+  // CAMERA HELPERS
+  // ─────────────────────────────────────────
+  function positionCameraImmediate() {
+    const camX = player.pos.x + Math.sin(camH) * CAM_DIST * Math.cos(camV);
+    const camY = PLAYER_H + CAM_HEIGHT + Math.sin(camV) * CAM_DIST;
+    const camZ = player.pos.z + Math.cos(camH) * CAM_DIST * Math.cos(camV);
+    camera.position.set(camX, camY, camZ);
+    camera.lookAt(player.pos.x, PLAYER_H + 1.5, player.pos.z);
+  }
+
+  // ─────────────────────────────────────────
   // PLAYER MOVEMENT (third-person)
   // ─────────────────────────────────────────
   function updatePlayer(dt) {
-    if (!pointerLocked || !player.mesh) return;
+    if (!player.mesh) return;
+
+    // Always update camera to follow player (even when not locked)
+    const camX = player.pos.x + Math.sin(camH) * CAM_DIST * Math.cos(camV);
+    const camY = PLAYER_H + CAM_HEIGHT + Math.sin(camV) * CAM_DIST;
+    const camZ = player.pos.z + Math.cos(camH) * CAM_DIST * Math.cos(camV);
+    camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.12);
+    camera.lookAt(player.pos.x, PLAYER_H + 1.5, player.pos.z);
+
+    if (!pointerLocked) return;
 
     // Camera-relative movement directions
     const fwd   = new THREE.Vector3(-Math.sin(camH), 0, -Math.cos(camH));
@@ -187,13 +207,6 @@ const World = (() => {
     if (player.moving) {
       player.mesh.position.y = Math.abs(Math.sin(t * 8)) * 0.04;
     }
-
-    // Third-person camera
-    const camX = player.pos.x + Math.sin(camH) * CAM_DIST * Math.cos(camV);
-    const camY = PLAYER_H + CAM_HEIGHT + Math.sin(camV) * CAM_DIST;
-    const camZ = player.pos.z + Math.cos(camH) * CAM_DIST * Math.cos(camV);
-    camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.12);
-    camera.lookAt(player.pos.x, PLAYER_H + 1.5, player.pos.z);
   }
 
   // ─────────────────────────────────────────
@@ -352,6 +365,7 @@ const World = (() => {
     player.pos.set(0, 0, 8);
     player.rot = Math.PI;
     camH = Math.PI;
+    positionCameraImmediate();
 
     // ── Floor ─────────────────────────────
     const floor = mkBox(W, 0.15, L, 0x0a0a18, null, 0);
@@ -522,6 +536,7 @@ const World = (() => {
     player.pos.set(0, 0, 7);
     player.rot = Math.PI;
     camH = Math.PI;
+    positionCameraImmediate();
 
     // ── Surfaces ──────────────────────────
     const floor = mkBox(W, 0.15, L, 0x080814, null, 0);
