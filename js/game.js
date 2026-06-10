@@ -1,428 +1,397 @@
 // ════════════════════════════════════════════
-// GAME ENGINE — NetAdmin Academy v2
+// GAME CONTROLLER — NetAdmin Academy v3
 // ════════════════════════════════════════════
 
-let curLevel    = 0;
-let curDialog   = 0;
-let doneObj     = new Set();
-let timerSec    = 0;
-let timerTick   = null;
-let score       = 0;
-let hintsLeft   = 3;
-let hintsUsed   = 0;
-let objPanelOpen = true;
-let minimapOpen = false;
+// ── State ─────────────────────────────────
+let currentLevelIdx = 0;
+let currentLevel    = null;
+let score           = 0;
+let hintsLeft       = 3;
+let timerSec        = 0;
+let timerHandle     = null;
+let dialogQueue     = [];
+let dialogIdx       = 0;
+let dialogCallback  = null;
+let objectives      = [];
+let inServerRoom    = false;
 
 // ── Boot ──────────────────────────────────
-
-window.addEventListener('load', () => {
-  spawnStars();
-  bootLoad();
+window.addEventListener('DOMContentLoaded', () => {
+  buildStars();
+  bootLoader();
 });
 
-function bootLoad() {
-  const fill = document.getElementById('load-fill');
-  const msg  = document.getElementById('load-msg');
-  const steps = [
-    [12,  'Memuat ruang server...'],
-    [28,  'Menyiapkan peralatan jaringan...'],
-    [45,  'Mengkonfigurasi terminal virtual...'],
-    [62,  'Memuat skenario misi...'],
-    [78,  'Menginisialisasi engine 360°...'],
-    [92,  'Menyalakan lampu ruangan...'],
-    [100, 'Siap! Selamat berpetualang! ⚡']
+function bootLoader() {
+  const fill = document.getElementById('ld-fill');
+  const msg  = document.getElementById('ld-msg');
+  const msgs = [
+    'Menyalakan server...', 'Memuat modul jaringan...',
+    'Inisialisasi terminal...', 'Mengkonfigurasi firewall...', 'Siap!'
   ];
-  let i = 0;
-  const run = () => {
-    if (i >= steps.length) { setTimeout(showMenu, 450); return; }
-    const [p, m] = steps[i++];
-    fill.style.width = p + '%';
-    msg.textContent  = m;
-    setTimeout(run, 300 + Math.random() * 250);
-  };
-  setTimeout(run, 200);
+  let pct = 0, mi = 0;
+  const iv = setInterval(() => {
+    pct += Math.random() * 22 + 8;
+    if (pct >= 100) { pct = 100; clearInterval(iv); }
+    fill.style.width = Math.min(pct, 100) + '%';
+    mi = Math.min(mi + 1, msgs.length - 1);
+    msg.textContent = msgs[mi];
+    if (pct >= 100) setTimeout(showMenu, 500);
+  }, 420);
 }
 
+function buildStars() {
+  const c = document.getElementById('mm-stars');
+  if (!c) return;
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
+      `width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;` +
+      `animation-delay:${Math.random()*3}s;animation-duration:${Math.random()*2+2}s`;
+    c.appendChild(s);
+  }
+}
+
+// ── Screen transitions ────────────────────
 function showMenu() {
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('main-menu').classList.remove('hidden');
 }
 
-// ── Stars (menu background) ───────────────
-
-function spawnStars() {
-  const container = document.getElementById('particles');
-  if (!container) return;
-  for (let i = 0; i < 80; i++) {
-    const star = document.createElement('div');
-    star.className = 'star';
-    const size = Math.random() * 2.5 + 0.5;
-    star.style.cssText = `
-      width:${size}px; height:${size}px;
-      left:${Math.random()*100}%;
-      top:${Math.random()*100}%;
-      --dur:${2 + Math.random()*4}s;
-      --delay:${Math.random()*3}s;
-    `;
-    container.appendChild(star);
-  }
+function goMenu() {
+  stopTimer();
+  ['game-screen','lvl-complete'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('main-menu').classList.remove('hidden');
 }
 
-// ── Tutorial ──────────────────────────────
+function showHowTo()   { document.getElementById('howto-screen').classList.remove('hidden'); }
+function hideHowTo()   { document.getElementById('howto-screen').classList.add('hidden'); }
+function showCredits() { document.getElementById('credits-screen').classList.remove('hidden'); }
+function hideCredits() { document.getElementById('credits-screen').classList.add('hidden'); }
 
-function showTutorial() {
-  document.getElementById('tutorial-screen').classList.remove('hidden');
-}
-function hideTutorial() {
-  document.getElementById('tutorial-screen').classList.add('hidden');
-  startGame();
-}
-
-// ── Start ─────────────────────────────────
-
+// ── Start / Load level ────────────────────
 function startGame() {
+  currentLevelIdx = 0;
+  score = 0;
+  document.getElementById('hud-score').textContent = score;
   document.getElementById('main-menu').classList.add('hidden');
-  document.getElementById('game-screen').classList.remove('hidden');
-
-  curLevel = 0; score = 0; hintsLeft = 3; hintsUsed = 0;
-  document.getElementById('score').textContent = '0';
-  document.getElementById('hint-count').textContent = '(3)';
-
-  Panorama.init();
-  initTerminal();
   loadLevel(0);
 }
 
 function loadLevel(idx) {
-  const lv = LEVELS[idx];
-  if (!lv) return;
+  currentLevel = LEVELS[idx];
+  inServerRoom = false;
+  hintsLeft    = 3;
+  timerSec     = 0;
 
-  doneObj  = new Set();
-  curDialog = 0;
-  timerSec  = 0;
-
-  // Reset UI
-  document.getElementById('term-output').innerHTML = '';
-  document.getElementById('terminal-wrap').classList.add('hidden');
-  document.getElementById('inspect-popup').classList.add('hidden');
-  document.getElementById('dialog-box').classList.add('hidden');
-  document.getElementById('level-complete').classList.add('hidden');
-  document.getElementById('timer').textContent = '00:00';
-  document.getElementById('score').textContent = score;
+  document.getElementById('game-screen').classList.remove('hidden');
+  document.getElementById('lvl-complete').classList.add('hidden');
 
   // HUD
-  document.getElementById('hud-level').textContent   = `Level ${lv.id} / ${LEVELS.length}`;
-  document.getElementById('hud-mission').textContent = lv.mission;
+  document.getElementById('hud-lv').textContent    = 'Level ' + (idx + 1);
+  document.getElementById('hud-ms').textContent    = currentLevel.mission;
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hint-left').textContent = hintsLeft;
 
-  // Room
-  document.getElementById('scene-bg').style.background = lv.bgColor || '';
-  renderRoomObjects(lv.objects);
-  renderObjectives(lv.objectives);
+  // Objectives
+  objectives = currentLevel.objectives.map(o => ({ ...o, done: false }));
+  renderObjectives();
 
-  // Reset camera
-  Panorama.panTo(0);
+  // Reset terminal
+  Terminal.reset();
+
+  // Build lobby (corridor)
+  Engine.buildScene('lobby', currentLevel);
+  wireDoor();
+  wireLobbyChars();
+
+  // Auto-show intro dialog if defined
+  const lobby = currentLevel.scenes.lobby;
+  if (lobby && lobby.dialogOnEnter) {
+    const dlg = currentLevel.dialogs[lobby.dialogOnEnter];
+    if (dlg) setTimeout(() => showDialog(dlg), 600);
+  }
 
   startTimer();
-  setTimeout(() => showDialog(), 800);
 }
 
-// ── Room Objects (Point & Click) ──────────
-
-function renderRoomObjects(objects) {
-  const layer = document.getElementById('layer-front');
-  layer.innerHTML = '';
-
-  objects.forEach((obj, i) => {
-    const el = document.createElement('div');
-    el.className = 'room-obj ping';
-    el.id = 'obj-room-' + obj.id;
-
-    // Convert posX (0-1) to actual pixel position in 300vw scene
-    const px = (obj.posX * 300) + 'vw';
-    const py = (obj.posY * 100) + '%';
-
-    el.style.cssText = `left:${px}; top:${py}; position:absolute;`;
-
-    el.innerHTML = `
-      <span class="room-obj-emoji">${obj.emoji}</span>
-      <span class="room-obj-label">${obj.label}</span>
-    `;
-
-    el.addEventListener('click', () => {
-      el.classList.remove('ping');
-      el.classList.add('found');
-      showInspect(obj.inspect, obj.id);
-    });
-
-    // Stagger entrance animation
-    el.style.opacity = '0';
+function wireLobbyChars() {
+  const lobby = currentLevel.scenes && currentLevel.scenes.lobby;
+  if (!lobby || !lobby.chars) return;
+  lobby.chars.forEach(ch => {
     setTimeout(() => {
-      el.style.transition = 'opacity .5s ease';
-      el.style.opacity = '1';
-    }, 200 + i * 150);
-
-    layer.appendChild(el);
+      const el = document.getElementById('char-' + ch.id);
+      if (el) el.onclick = () => onCharClick(ch.id);
+    }, 120);
   });
 }
 
-// ── Inspect ───────────────────────────────
+// ── Door wiring ───────────────────────────
+function wireDoor() {
+  setTimeout(() => {
+    const wrap = document.getElementById('door-wrap');
+    if (wrap) wrap.onclick = () => {
+      if (Engine.isTransitioning()) return;
+      Engine.openDoorAndEnter('serverroom', currentLevel, onEnterServerRoom);
+    };
+  }, 120);
+}
 
-function showInspect(data, objId) {
-  document.getElementById('inspect-icon').textContent   = data.icon || '🖥️';
-  document.getElementById('inspect-title').textContent  = data.title;
-  document.getElementById('inspect-body').innerHTML     = data.body.replace(/\n/g,'<br/>');
+function onEnterServerRoom() {
+  inServerRoom = true;
+  wireItems();
+  wireRoomChars();
+}
 
-  // Status badge
-  const sw = document.getElementById('inspect-status-wrap');
-  const sb = document.getElementById('inspect-status');
-  sb.textContent  = data.statusText;
-  sb.className    = 'istatus';
-  const clsMap    = {ok:'istatus-ok', warn:'istatus-warn', err:'istatus-err'};
-  sb.classList.add(clsMap[data.status] || 'istatus-warn');
+function wireItems() {
+  if (!currentLevel.items) return;
+  Object.keys(currentLevel.items).forEach(id => {
+    const el = document.getElementById('item-' + id);
+    if (el) el.onclick = () => onItemClick(id);
+  });
+}
 
-  // Theory box
-  const theoryEl = document.getElementById('inspect-theory');
-  const theoryTxt = document.getElementById('theory-body');
-  if (data.theory) {
-    theoryTxt.textContent = data.theory;
-    theoryEl.classList.remove('hidden');
+function wireRoomChars() {
+  const def = currentLevel.scenes && currentLevel.scenes.serverroom;
+  if (!def || !def.chars) return;
+  def.chars.forEach(ch => {
+    const el = document.getElementById('char-' + ch.id);
+    if (el) el.onclick = () => onCharClick(ch.id);
+  });
+}
+
+// ── Navigation ────────────────────────────
+function navLeft() {
+  if (Engine.isTransitioning()) return;
+  const sid   = Engine.getCurrentScene();
+  const scene = currentLevel.scenes[sid];
+  if (scene && scene.navLeft) Engine.walkTo(scene.navLeft, currentLevel, wireItems);
+}
+
+function navRight() {
+  if (Engine.isTransitioning()) return;
+  const sid   = Engine.getCurrentScene();
+  const scene = currentLevel.scenes[sid];
+  if (scene && scene.navRight) Engine.walkTo(scene.navRight, currentLevel, wireItems);
+}
+
+function navBack() {
+  if (Engine.isTransitioning()) return;
+  const sid   = Engine.getCurrentScene();
+  const scene = currentLevel.scenes[sid];
+  if (scene && scene.navBack) {
+    Engine.walkTo(scene.navBack, currentLevel, () => {
+      inServerRoom = false;
+      wireDoor();
+    });
+  }
+}
+
+// ── Character click ───────────────────────
+function onCharClick(charId) {
+  // Try char-specific key first, then sari_greet for sari, fallback intro
+  const dlg = currentLevel.dialogs['char_' + charId]
+    || (charId === 'sari' ? currentLevel.dialogs['sari_greet'] : null)
+    || currentLevel.dialogs['intro'];
+  if (!dlg) return;
+
+  showDialog(dlg, () => {
+    // After dialog, highlight the door as next step
+    const hint = document.getElementById('door-hint');
+    if (hint) { hint.style.display = ''; hint.textContent = 'Klik pintu untuk masuk →'; }
+  });
+}
+
+// ── Item click (server room) ──────────────
+function onItemClick(itemId) {
+  const item = currentLevel.items[itemId];
+  if (!item) return;
+
+  Engine.markItemFound(itemId);
+  addScore(50);
+
+  document.getElementById('ins-ico').textContent   = item.icon || item.emoji || '🔍';
+  document.getElementById('ins-title').textContent = item.title;
+  document.getElementById('ins-badge').textContent = item.statusText || item.status || '';
+  document.getElementById('ins-body').textContent  = item.body;
+
+  const theory = document.getElementById('ins-theory');
+  if (item.theory) {
+    theory.classList.remove('hidden');
+    document.getElementById('th-txt').textContent = item.theory;
   } else {
-    theoryEl.classList.add('hidden');
+    theory.classList.add('hidden');
   }
 
-  // Terminal button
-  const btn = document.getElementById('inspect-action');
-  if (data.triggerTerminal) {
-    btn.classList.remove('hidden');
-    btn.onclick = () => { closeInspect(); openTerminal(); };
+  const actBtn = document.getElementById('ins-action');
+  if (item.triggerTerm) {
+    actBtn.classList.remove('hidden');
+    actBtn.onclick = () => { closeInspect(); openTerm(); };
   } else {
-    btn.classList.add('hidden');
+    actBtn.classList.add('hidden');
   }
 
-  document.getElementById('inspect-popup').classList.remove('hidden');
-  document.getElementById('terminal-wrap').classList.add('hidden');
+  document.getElementById('inspect-box').classList.remove('hidden');
 }
 
 function closeInspect() {
-  document.getElementById('inspect-popup').classList.add('hidden');
+  document.getElementById('inspect-box').classList.add('hidden');
 }
 
-// ── Dialog ────────────────────────────────
-
-function showDialog() {
-  const lv = LEVELS[curLevel];
-  if (!lv.dialogs || curDialog >= lv.dialogs.length) return;
-
-  const d = lv.dialogs[curDialog];
-  document.getElementById('dlg-avatar').textContent = d.avatar;
-  document.getElementById('dlg-name').textContent   = d.name;
+// ── Dialog system ─────────────────────────
+function showDialog(lines, callback) {
+  dialogQueue    = lines;
+  dialogIdx      = 0;
+  dialogCallback = callback || null;
   document.getElementById('dialog-box').classList.remove('hidden');
+  renderDialogLine();
+}
 
-  const textEl = document.getElementById('dlg-text');
-  textEl.textContent = '';
+function renderDialogLine() {
+  if (dialogIdx >= dialogQueue.length) {
+    document.getElementById('dialog-box').classList.add('hidden');
+    if (dialogCallback) { const cb = dialogCallback; dialogCallback = null; cb(); }
+    return;
+  }
+  const line = dialogQueue[dialogIdx];
+  document.getElementById('dlg-ava').textContent = line.avatar || line.who || '👤';
+  document.getElementById('dlg-who').textContent = line.name   || '';
+  typeWriter('dlg-txt', line.text);
+}
+
+function advanceDialog() {
+  dialogIdx++;
+  renderDialogLine();
+}
+
+function typeWriter(elId, text) {
+  const el = document.getElementById(elId);
+  el.textContent = '';
   let i = 0;
-  const t = setInterval(() => {
-    textEl.textContent += d.text[i++];
-    if (i >= d.text.length) clearInterval(t);
+  if (el._tw) clearInterval(el._tw);
+  el._tw = setInterval(() => {
+    el.textContent += text[i++];
+    if (i >= text.length) clearInterval(el._tw);
   }, 20);
 }
 
-function nextDialog() {
-  curDialog++;
-  const lv = LEVELS[curLevel];
-  if (curDialog < lv.dialogs.length) {
-    showDialog();
-  } else {
-    document.getElementById('dialog-box').classList.add('hidden');
-    showNotif('💡 Geser kiri/kanan untuk jelajahi ruangan, klik objek!');
-  }
+// ── Terminal ──────────────────────────────
+function openTerm() {
+  Terminal.boot();
+  document.getElementById('term-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('trm-in').focus(), 80);
+}
+
+function closeTerm() {
+  document.getElementById('term-overlay').classList.add('hidden');
 }
 
 // ── Objectives ────────────────────────────
-
-function renderObjectives(objectives) {
-  const ul = document.getElementById('obj-list');
+function renderObjectives() {
+  const ul = document.getElementById('obj-ul');
   ul.innerHTML = '';
-  objectives.forEach(obj => {
+  objectives.forEach(o => {
     const li = document.createElement('li');
-    li.id = 'li-' + obj.id;
-    li.textContent = obj.text;
+    li.className = 'obj-item' + (o.done ? ' done' : '');
+    li.id = 'obj-' + o.id;
+    li.textContent = o.text;
     ul.appendChild(li);
   });
 }
 
 function completeObjective(id) {
-  if (doneObj.has(id)) return;
+  const obj = objectives.find(o => o.id === id);
+  if (!obj || obj.done) return;
+  obj.done = true;
+  renderObjectives();
+  addScore(200);
+  showNotif('✓ ' + obj.text);
 
-  const lv  = LEVELS[curLevel];
-  const obj = lv.objectives.find(o => o.id === id);
-  if (!obj) return;
+  if (objectives.every(o => o.done)) setTimeout(levelComplete, 900);
+}
 
-  doneObj.add(id);
-  const li = document.getElementById('li-' + id);
-  if (li) li.classList.add('done');
-
-  score += 20;
-  document.getElementById('score').textContent = score;
-  showNotif(`✓ Selesai: ${obj.text}`);
-
-  // Mark room object
-  const roomObj = document.getElementById('obj-room-' + id);
-  if (roomObj) roomObj.classList.add('found');
-
-  if (lv.objectives.every(o => doneObj.has(o.id))) {
-    stopTimer();
-    setTimeout(showLevelComplete, 1000);
-  }
+function toggleObj() {
+  const inner = document.getElementById('obj-inner');
+  const tog   = document.getElementById('obj-tog');
+  const closed = inner.style.display === 'none';
+  inner.style.display = closed ? '' : 'none';
+  tog.textContent     = closed ? '▾' : '▸';
 }
 
 // ── Hints ─────────────────────────────────
-
 function useHint() {
-  if (hintsLeft <= 0) {
-    showNotif('⚠️ Hint sudah habis!', true);
-    return;
-  }
-  const lv = LEVELS[curLevel];
-  const hintIdx = hintsUsed % lv.hints.length;
-  const hint = lv.hints[hintIdx];
-
-  // Show hint in dialog
-  document.getElementById('dlg-avatar').textContent = '💡';
-  document.getElementById('dlg-name').textContent   = 'Hint';
-  document.getElementById('dlg-text').textContent   = hint;
-  document.getElementById('dialog-box').classList.remove('hidden');
-
+  if (hintsLeft <= 0) { showNotif('Hint sudah habis!'); return; }
+  const hint = currentLevel.hints[3 - hintsLeft];
   hintsLeft--;
-  hintsUsed++;
-  score = Math.max(0, score - 10);
-  document.getElementById('score').textContent = score;
-  document.getElementById('hint-count').textContent = `(${hintsLeft})`;
+  document.getElementById('hint-left').textContent = hintsLeft;
+  showDialog([{ avatar: '💡', name: 'Petunjuk', text: hint || 'Periksa semua objek di server room.' }]);
+}
 
-  if (hintsLeft === 0) {
-    document.getElementById('hint-btn').disabled = true;
-  }
+// ── Score & notif ─────────────────────────
+function addScore(pts) {
+  score += pts;
+  document.getElementById('hud-score').textContent = score;
+}
+
+function showNotif(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 2800);
 }
 
 // ── Timer ─────────────────────────────────
-
 function startTimer() {
   stopTimer();
-  timerSec  = 0;
-  timerTick = setInterval(() => {
+  timerHandle = setInterval(() => {
     timerSec++;
-    const m = String(Math.floor(timerSec / 60)).padStart(2,'0');
-    const s = String(timerSec % 60).padStart(2,'0');
-    document.getElementById('timer').textContent = `${m}:${s}`;
+    const m = String(Math.floor(timerSec / 60)).padStart(2, '0');
+    const s = String(timerSec % 60).padStart(2, '0');
+    document.getElementById('hud-time').textContent = m + ':' + s;
   }, 1000);
 }
 
-function stopTimer() {
-  clearInterval(timerTick);
-  timerTick = null;
-}
+function stopTimer() { clearInterval(timerHandle); timerHandle = null; }
 
-// ── Level Complete ────────────────────────
+// ── Level complete ─────────────────────────
+function levelComplete() {
+  stopTimer();
 
-function showLevelComplete() {
-  const lv = LEVELS[curLevel];
-  const m  = String(Math.floor(timerSec / 60)).padStart(2,'0');
-  const s  = String(timerSec % 60).padStart(2,'0');
+  const timeBonus = Math.max(0, 600 - timerSec) * 2;
+  addScore(timeBonus);
 
-  let bonus = 0;
-  if (timerSec < 90)  bonus = 100;
-  else if (timerSec < 180) bonus = 60;
-  else if (timerSec < 300) bonus = 30;
-  score += bonus;
+  const m = String(Math.floor(timerSec / 60)).padStart(2, '0');
+  const s = String(timerSec % 60).padStart(2, '0');
 
-  const stars = timerSec < 90 ? '⭐⭐⭐' : timerSec < 180 ? '⭐⭐' : '⭐';
-  document.querySelector('.lc-stars').textContent = stars;
-  document.getElementById('lc-icon').textContent  = lv.badge.split(' ')[0];
-  document.getElementById('lc-badge').textContent = lv.badge;
-  document.getElementById('lc-score').textContent = score + (bonus ? ` (+${bonus})` : '');
-  document.getElementById('lc-time').textContent  = `${m}:${s}`;
-  document.getElementById('lc-hints').textContent = `${hintsUsed}x`;
+  const badges = [
+    '🥉 Teknisi Pemula', '🥈 Sysadmin Muda', '🥇 Network Engineer',
+    '🏅 Senior SysAdmin', '🏆 Master NetAdmin'
+  ];
+  document.getElementById('lc-badge-txt').textContent = badges[currentLevelIdx] || '🌟 Selesai';
+  document.getElementById('lc-sc').textContent = score;
+  document.getElementById('lc-tm').textContent = m + ':' + s;
+  document.getElementById('lc-ht').textContent = (3 - hintsLeft) + 'x';
 
-  document.getElementById('level-complete').classList.remove('hidden');
+  // Reset burst animation
+  const burst = document.getElementById('lc-burst');
+  burst.style.animation = 'none';
+  void burst.offsetHeight;
+  burst.style.animation = '';
+
+  document.getElementById('lvl-complete').classList.remove('hidden');
 }
 
 function nextLevel() {
-  document.getElementById('level-complete').classList.add('hidden');
-  curLevel++;
-
-  if (curLevel < LEVELS.length) {
-    loadLevel(curLevel);
-  } else {
-    showGameComplete();
+  currentLevelIdx++;
+  if (currentLevelIdx >= LEVELS.length) {
+    document.getElementById('lvl-complete').classList.add('hidden');
+    showDialog([
+      { avatar: '🏆', name: 'Selamat!',     text: 'Kamu telah menyelesaikan semua 5 level! Kamu adalah Master NetAdmin Netville City!' },
+      { avatar: '🎓', name: 'Pak Kepala',    text: 'Luar biasa! Kamu sudah menguasai administrasi server Linux dari dasar sampai advanced. Terima kasih!' }
+    ], goMenu);
+    return;
   }
-}
-
-function showGameComplete() {
-  Panorama.destroy();
-  document.getElementById('game-screen').classList.add('hidden');
-  document.getElementById('main-menu').classList.remove('hidden');
-
-  document.querySelector('.menu-center').innerHTML = `
-    <div class="menu-icon-big" style="animation:none">🏆</div>
-    <h1 class="menu-title" style="font-size:2rem">
-      SELAMAT!<br/><span>NetAdmin Hero!</span>
-    </h1>
-    <p class="menu-tagline">
-      Semua misi selesai! Berkat keahlianmu,<br/>
-      Kota Netville kembali normal.<br/>
-      Kamu resmi menjadi <strong>Senior SysAdmin Termuda!</strong> 🔥
-    </p>
-    <div style="font-size:1.6rem;margin:.5rem 0;color:var(--yellow)">⭐ ${score} poin</div>
-    <div class="menu-btns" style="margin-top:1.5rem">
-      <button class="mbtn mbtn-play" onclick="location.reload()">🔄 Main Lagi</button>
-    </div>
-    <div class="menu-footer" style="margin-top:1.5rem">SMK TKJ · Netville City · v2.0</div>
-  `;
-}
-
-// ── Notification ──────────────────────────
-
-function showNotif(msg, warn = false) {
-  const el = document.getElementById('notif');
-  el.textContent = msg;
-  el.className   = warn ? 'warn-notif' : '';
-  el.classList.remove('hidden');
-  el.style.animation = 'none';
-  void el.offsetHeight;
-  el.style.animation = 'notifAnim 3s forwards';
-  setTimeout(() => el.classList.add('hidden'), 3200);
-}
-
-// ── UI Helpers ────────────────────────────
-
-function toggleObjPanel() {
-  const body   = document.getElementById('obj-body');
-  const toggle = document.getElementById('obj-toggle');
-  objPanelOpen = !objPanelOpen;
-  body.style.display  = objPanelOpen ? '' : 'none';
-  toggle.textContent  = objPanelOpen ? '▼' : '▲';
-}
-
-function toggleMinimap() {
-  const mm = document.getElementById('minimap');
-  minimapOpen = !minimapOpen;
-  mm.classList.toggle('hidden', !minimapOpen);
-}
-
-function goMainMenu() {
-  stopTimer();
-  Panorama.destroy();
-  document.getElementById('game-screen').classList.add('hidden');
-  document.getElementById('main-menu').classList.remove('hidden');
-}
-
-// ── Credits ───────────────────────────────
-
-function showCredits() {
-  document.getElementById('main-menu').classList.add('hidden');
-  document.getElementById('credits-screen').classList.remove('hidden');
-}
-function hideCredits() {
-  document.getElementById('credits-screen').classList.add('hidden');
-  document.getElementById('main-menu').classList.remove('hidden');
+  document.getElementById('lvl-complete').classList.add('hidden');
+  loadLevel(currentLevelIdx);
 }

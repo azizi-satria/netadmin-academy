@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════
-// TERMINAL ENGINE — NetAdmin Academy
+// TERMINAL ENGINE — NetAdmin Academy v3
 // ════════════════════════════════════════════
 
 const COMMANDS = {
@@ -15,7 +15,7 @@ const COMMANDS = {
     ]
   },
   "ip address": {alias:"ip addr"},
-  "ifconfig": {alias:"ip addr"},
+  "ifconfig":   {alias:"ip addr"},
 
   "hostnamectl set-hostname netville-server": {
     obj: "set-hostname",
@@ -41,8 +41,8 @@ const COMMANDS = {
       {t:"s", v:"✓ Sistem sudah up-to-date!"}
     ]
   },
-  "sudo apt update": {alias:"apt update"},
-  "apt-get update": {alias:"apt update"},
+  "sudo apt update":           {alias:"apt update"},
+  "apt-get update":            {alias:"apt update"},
   "apt update && apt upgrade": {alias:"apt update"},
 
   "systemctl enable ssh": {
@@ -109,15 +109,14 @@ const COMMANDS = {
     out: [
       {t:"s", v:"<!DOCTYPE html>"},
       {t:"s", v:"<html><head><title>SMK Netville — Pendaftaran Siswa Baru</title></head>"},
-      {t:"s", v:"<body>"},
-      {t:"s", v:"  <h1>Selamat Datang di SMK Netville!</h1>"},
+      {t:"s", v:"<body><h1>Selamat Datang di SMK Netville!</h1>"},
       {t:"s", v:"  <p>Pendaftaran siswa baru. Deadline: hari ini!</p>"},
       {t:"s", v:"</body></html>"},
       {t:"s", v:"\n✓ Website berhasil diakses! 🎉"}
     ]
   },
-  "curl localhost": {alias:"curl http://localhost"},
-  "wget http://localhost": {alias:"curl http://localhost"},
+  "curl localhost":       {alias:"curl http://localhost"},
+  "wget http://localhost":{alias:"curl http://localhost"},
 
   // ── Level 3 ──────────────────────────────
   "apt install isc-dhcp-server": {
@@ -135,7 +134,6 @@ const COMMANDS = {
     obj: "config-dhcp",
     out: [
       {t:"i", v:"[Membuka editor konfigurasi DHCP...]"},
-      {t:"l", v:""},
       {t:"l", v:"subnet 192.168.10.0 netmask 255.255.255.0 {"},
       {t:"l", v:"    range 192.168.10.100 192.168.10.200;"},
       {t:"l", v:"    option routers 192.168.10.1;"},
@@ -184,8 +182,8 @@ const COMMANDS = {
       {t:"e", v:"\n⚠️ IP PENYERANG: 45.33.32.156 — Brute Force Attack!"}
     ]
   },
-  "tail -f /var/log/auth.log": {alias:"cat /var/log/auth.log"},
-  "grep Failed /var/log/auth.log": {alias:"cat /var/log/auth.log"},
+  "tail -f /var/log/auth.log":   {alias:"cat /var/log/auth.log"},
+  "grep Failed /var/log/auth.log":{alias:"cat /var/log/auth.log"},
 
   "ufw enable": {
     obj: "enable-ufw",
@@ -204,7 +202,7 @@ const COMMANDS = {
       {t:"s", v:"✓ Port 22 (SSH) diizinkan untuk koneksi yang sah"}
     ]
   },
-  "ufw allow 22": {alias:"ufw allow ssh"},
+  "ufw allow 22":     {alias:"ufw allow ssh"},
   "ufw allow 22/tcp": {alias:"ufw allow ssh"},
 
   "ufw deny from 45.33.32.156": {
@@ -227,7 +225,7 @@ const COMMANDS = {
 
   // ── Level 5 ──────────────────────────────
   "systemctl restart networking": {
-    obj: "restart-network",
+    obj: "restart-net",
     out: [
       {t:"i", v:"Restarting network..."},
       {t:"s", v:"eth0: UP — IP: 192.168.1.100 ✓"},
@@ -238,33 +236,15 @@ const COMMANDS = {
   "systemctl restart network": {alias:"systemctl restart networking"},
 
   "systemctl restart apache2": {
-    obj: "restart-apache2",
+    obj: "restart-web",
     out: [
       {t:"s", v:"✓ apache2.service direstart"},
       {t:"s", v:"  Web server aktif di port 80 ✓"}
     ]
   },
-  "systemctl restart ssh": {
-    obj: "restart-ssh2",
-    out: [
-      {t:"s", v:"✓ ssh.service direstart"},
-      {t:"s", v:"  SSH aktif di port 22 ✓"}
-    ]
-  },
-  "systemctl restart sshd": {alias:"systemctl restart ssh"},
 
-  "ufw status verbose": {
-    obj: "check-ufw2",
-    out: [
-      {t:"s", v:"Status: active"},
-      {t:"s", v:"80/tcp    ALLOW IN  Anywhere  ← HTTP ✓"},
-      {t:"s", v:"443/tcp   ALLOW IN  Anywhere  ← HTTPS ✓"},
-      {t:"s", v:"22/tcp    ALLOW IN  Anywhere  ← SSH ✓"},
-      {t:"s", v:"\n✓ Semua port penting terbuka — traffic ujian OK!"}
-    ]
-  },
   "systemctl list-units --state=running": {
-    obj: "test-all",
+    obj: "verify-all",
     out: [
       {t:"l", v:"  UNIT                        LOAD   ACTIVE  DESCRIPTION"},
       {t:"l", v:"  ─────────────────────────────────────────────────────"},
@@ -292,17 +272,15 @@ const COMMANDS = {
       {t:"l", v:"  systemctl ...    — Kelola service"},
       {t:"l", v:"  apt install ...  — Install paket"},
       {t:"l", v:"  ufw ...          — Kelola firewall"},
-      {t:"l", v:"  clear            — Bersihkan terminal"},
+      {t:"l", v:"  clear            — Bersihkan terminal"}
     ]
   },
   "clear": {clear:true, out:[]},
   "cls":   {clear:true, out:[]},
-  "ls": {
-    out:[{t:"l", v:"bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var"}]
-  },
-  "ls /": {alias:"ls"},
-  "pwd":    {out:[{t:"l", v:"/root"}]},
-  "whoami": {out:[{t:"s", v:"root"}]},
+  "ls":    {out:[{t:"l", v:"bin  boot  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var"}]},
+  "ls /":  {alias:"ls"},
+  "pwd":   {out:[{t:"l", v:"/root"}]},
+  "whoami":{out:[{t:"s", v:"root"}]},
   "uname -a": {
     out:[{t:"l", v:"Linux netville-server 5.15.0-91-generic #101-Ubuntu SMP x86_64 GNU/Linux"}]
   },
@@ -334,100 +312,104 @@ const COMMANDS = {
       {t:"s", v:"2 packets transmitted, 2 received, 0% packet loss"}
     ]
   },
-  "exit": {out:[{t:"w", v:"Sesi terminal ditutup."}]}
+  "exit": {out:[{t:"w", v:"Ketik tombol ✕ untuk menutup terminal."}]}
 };
 
-// ── Terminal State ────────────────────────
-let cmdHistory = [];
-let histIdx    = -1;
+// ── Terminal singleton ─────────────────────
+const Terminal = (() => {
+  let cmdHistory = [];
+  let histIdx    = -1;
+  let booted     = false;
 
-function initTerminal() {
-  const input = document.getElementById('term-input');
-  input.addEventListener('keydown', onTermKey);
-}
-
-function onTermKey(e) {
-  const input = document.getElementById('term-input');
-
-  if (e.key === 'Enter') {
-    const raw = input.value.trim();
-    if (!raw) return;
-    cmdHistory.unshift(raw);
-    histIdx = -1;
-    printLine('root@netville:~# ' + raw, 'p');
-    runCmd(raw);
-    input.value = '';
-    return;
-  }
-  if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    if (histIdx < cmdHistory.length - 1) input.value = cmdHistory[++histIdx];
-  }
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    histIdx > 0 ? input.value = cmdHistory[--histIdx] : (histIdx = -1, input.value = '');
-  }
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const partial = input.value.toLowerCase();
-    const match = Object.keys(COMMANDS).find(c => c.startsWith(partial) && c !== partial);
-    if (match) input.value = match;
-  }
-}
-
-function runCmd(raw) {
-  const key = raw.trim().toLowerCase();
-  let data = COMMANDS[key];
-  if (data && data.alias) data = COMMANDS[data.alias.toLowerCase()];
-
-  if (!data) {
-    printLine(`bash: ${raw}: command not found`, 'e');
-    printLine("Ketik 'help' untuk bantuan.", 'w');
-    return;
+  function init() {
+    const input = document.getElementById('trm-in');
+    if (!input) return;
+    input.addEventListener('keydown', onKey);
   }
 
-  if (data.clear) {
-    document.getElementById('term-output').innerHTML = '';
-    return;
+  function onKey(e) {
+    const input = document.getElementById('trm-in');
+    if (e.key === 'Enter') {
+      const raw = input.value.trim();
+      if (!raw) return;
+      cmdHistory.unshift(raw);
+      if (cmdHistory.length > 50) cmdHistory.pop();
+      histIdx = -1;
+      printLine('root@netville:~# ' + raw, 'p');
+      runCmd(raw);
+      input.value = '';
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (histIdx < cmdHistory.length - 1) input.value = cmdHistory[++histIdx];
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      histIdx > 0 ? input.value = cmdHistory[--histIdx] : (histIdx = -1, input.value = '');
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const partial = input.value.toLowerCase();
+      if (!partial) return;
+      const match = Object.keys(COMMANDS).find(c => c.startsWith(partial) && c !== partial);
+      if (match) input.value = match;
+    }
   }
 
-  const D = 65;
-  data.out.forEach((line, i) => {
-    setTimeout(() => {
-      const v = typeof line.v === 'function' ? line.v() : line.v;
-      printLine(v, line.t);
-    }, i * D);
-  });
+  function runCmd(raw) {
+    const key  = raw.trim().toLowerCase();
+    let data   = COMMANDS[key];
+    if (data && data.alias) data = COMMANDS[data.alias.toLowerCase()];
 
-  if (data.obj) {
-    setTimeout(() => completeObjective(data.obj), data.out.length * D + 120);
+    if (!data) {
+      printLine(`bash: ${raw}: command not found`, 'e');
+      printLine("Ketik 'help' untuk bantuan.", 'w');
+      return;
+    }
+
+    if (data.clear) {
+      document.getElementById('trm-out').innerHTML = '';
+      return;
+    }
+
+    const D = 65;
+    data.out.forEach((line, i) => {
+      setTimeout(() => {
+        const v = typeof line.v === 'function' ? line.v() : line.v;
+        printLine(v, line.t);
+      }, i * D);
+    });
+
+    if (data.obj) {
+      setTimeout(() => completeObjective(data.obj), data.out.length * D + 120);
+    }
   }
-}
 
-function printLine(text, type = 'l') {
-  const out = document.getElementById('term-output');
-  const div = document.createElement('div');
-  const cls = {l:'tl', e:'te', w:'tw', i:'ti', s:'ts', p:'tp'}[type] || 'tl';
-  div.className = cls;
-  div.textContent = text;
-  out.appendChild(div);
-  out.scrollTop = out.scrollHeight;
-}
+  function printLine(text, type) {
+    const out = document.getElementById('trm-out');
+    const div = document.createElement('div');
+    const cls = {l:'tl', e:'te', w:'tw', i:'ti', s:'ts', p:'tp'}[type] || 'tl';
+    div.className = cls;
+    div.textContent = text;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+  }
 
-function openTerminal() {
-  const wrap = document.getElementById('terminal-wrap');
-  wrap.classList.remove('hidden');
-  document.getElementById('inspect-popup').classList.add('hidden');
-  setTimeout(() => document.getElementById('term-input').focus(), 80);
-
-  if (document.getElementById('term-output').children.length === 0) {
+  function boot() {
+    if (booted) return;
+    booted = true;
     printLine('NetAdmin Academy — Terminal Virtual', 'i');
     printLine('Ubuntu Server 22.04.3 LTS', 'l');
-    printLine("Ketik 'help' untuk bantuan.", 'i');
+    printLine("Ketik 'help' untuk daftar perintah.", 'i');
     printLine('', 'l');
   }
-}
 
-function closeTerminal() {
-  document.getElementById('terminal-wrap').classList.add('hidden');
-}
+  function reset() {
+    document.getElementById('trm-out').innerHTML = '';
+    booted = false;
+    cmdHistory = [];
+    histIdx = -1;
+  }
+
+  return { init, boot, reset, printLine, runCmd };
+})();
+
+// Init terminal input listener on DOM ready
+document.addEventListener('DOMContentLoaded', () => Terminal.init());
