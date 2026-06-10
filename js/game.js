@@ -1,288 +1,427 @@
-// ============================================
-// GAME ENGINE UTAMA — NetAdmin Academy
-// ============================================
+// ════════════════════════════════════════════
+// GAME ENGINE — NetAdmin Academy v2
+// ════════════════════════════════════════════
 
-let currentLevel    = 0;
-let currentDialog   = 0;
-let completedObj    = new Set();
-let timerInterval   = null;
-let timerSeconds    = 0;
-let score           = 0;
+let curLevel    = 0;
+let curDialog   = 0;
+let doneObj     = new Set();
+let timerSec    = 0;
+let timerTick   = null;
+let score       = 0;
+let hintsLeft   = 3;
+let hintsUsed   = 0;
+let objPanelOpen = true;
+let minimapOpen = false;
 
-// ── Boot ──────────────────────────────────────
+// ── Boot ──────────────────────────────────
 
 window.addEventListener('load', () => {
-  simulateLoading();
+  spawnStars();
+  bootLoad();
 });
 
-function simulateLoading() {
-  const fill = document.getElementById('loading-fill');
-  const text = document.getElementById('loading-text');
+function bootLoad() {
+  const fill = document.getElementById('load-fill');
+  const msg  = document.getElementById('load-msg');
   const steps = [
-    [15,  'Memuat aset game...'],
-    [35,  'Menyiapkan server virtual...'],
-    [55,  'Mengkonfigurasi terminal...'],
-    [75,  'Memuat skenario misi...'],
-    [90,  'Menginisialisasi karakter...'],
-    [100, 'Siap! Selamat bermain!']
+    [12,  'Memuat ruang server...'],
+    [28,  'Menyiapkan peralatan jaringan...'],
+    [45,  'Mengkonfigurasi terminal virtual...'],
+    [62,  'Memuat skenario misi...'],
+    [78,  'Menginisialisasi engine 360°...'],
+    [92,  'Menyalakan lampu ruangan...'],
+    [100, 'Siap! Selamat berpetualang! ⚡']
   ];
-
   let i = 0;
   const run = () => {
-    if (i >= steps.length) { setTimeout(showMainMenu, 400); return; }
-    const [pct, msg] = steps[i++];
-    fill.style.width = pct + '%';
-    text.textContent = msg;
-    setTimeout(run, 350 + Math.random() * 200);
+    if (i >= steps.length) { setTimeout(showMenu, 450); return; }
+    const [p, m] = steps[i++];
+    fill.style.width = p + '%';
+    msg.textContent  = m;
+    setTimeout(run, 300 + Math.random() * 250);
   };
-  setTimeout(run, 300);
+  setTimeout(run, 200);
 }
 
-function showMainMenu() {
+function showMenu() {
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('main-menu').classList.remove('hidden');
 }
 
-// ── Game Start ───────────────────────────────
+// ── Stars (menu background) ───────────────
+
+function spawnStars() {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  for (let i = 0; i < 80; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    star.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      --dur:${2 + Math.random()*4}s;
+      --delay:${Math.random()*3}s;
+    `;
+    container.appendChild(star);
+  }
+}
+
+// ── Tutorial ──────────────────────────────
+
+function showTutorial() {
+  document.getElementById('tutorial-screen').classList.remove('hidden');
+}
+function hideTutorial() {
+  document.getElementById('tutorial-screen').classList.add('hidden');
+  startGame();
+}
+
+// ── Start ─────────────────────────────────
 
 function startGame() {
   document.getElementById('main-menu').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
-  currentLevel = 0;
-  score = 0;
+
+  curLevel = 0; score = 0; hintsLeft = 3; hintsUsed = 0;
   document.getElementById('score').textContent = '0';
+  document.getElementById('hint-count').textContent = '(3)';
+
+  Panorama.init();
   initTerminal();
   loadLevel(0);
 }
 
 function loadLevel(idx) {
-  const level = LEVELS[idx];
-  if (!level) return;
+  const lv = LEVELS[idx];
+  if (!lv) return;
 
-  completedObj  = new Set();
-  currentDialog = 0;
-  timerSeconds  = 0;
+  doneObj  = new Set();
+  curDialog = 0;
+  timerSec  = 0;
 
   // Reset UI
-  document.getElementById('terminal-output').innerHTML = '';
-  document.getElementById('terminal-area').classList.add('hidden');
+  document.getElementById('term-output').innerHTML = '';
+  document.getElementById('terminal-wrap').classList.add('hidden');
   document.getElementById('inspect-popup').classList.add('hidden');
   document.getElementById('dialog-box').classList.add('hidden');
   document.getElementById('level-complete').classList.add('hidden');
+  document.getElementById('timer').textContent = '00:00';
+  document.getElementById('score').textContent = score;
 
   // HUD
-  document.getElementById('hud-level').textContent   = `Level ${level.id}`;
-  document.getElementById('hud-mission').textContent = `Misi: ${level.mission}`;
-  document.getElementById('timer').textContent        = '00:00';
+  document.getElementById('hud-level').textContent   = `Level ${lv.id} / ${LEVELS.length}`;
+  document.getElementById('hud-mission').textContent = lv.mission;
 
-  // Scene
-  document.getElementById('scene-bg').style.background = level.scene.bg;
-  renderObjects(level.scene.objects);
-  renderObjectives(level.objectives);
+  // Room
+  document.getElementById('scene-bg').style.background = lv.bgColor || '';
+  renderRoomObjects(lv.objects);
+  renderObjectives(lv.objectives);
+
+  // Reset camera
+  Panorama.panTo(0);
+
   startTimer();
-
-  // Mulai dialog setelah sebentar
-  setTimeout(() => showDialog(), 700);
+  setTimeout(() => showDialog(), 800);
 }
 
-// ── Scene Objects (Point & Click) ────────────
+// ── Room Objects (Point & Click) ──────────
 
-function renderObjects(objects) {
-  const container = document.getElementById('scene-objects');
-  container.innerHTML = '';
+function renderRoomObjects(objects) {
+  const layer = document.getElementById('layer-front');
+  layer.innerHTML = '';
 
-  objects.forEach(obj => {
+  objects.forEach((obj, i) => {
     const el = document.createElement('div');
-    el.className = 'scene-object';
-    el.style.left = obj.x;
-    el.style.top  = obj.y;
-    el.innerHTML  = `
-      <span class="obj-emoji">${obj.emoji}</span>
-      <div class="obj-label">${obj.label}</div>
+    el.className = 'room-obj ping';
+    el.id = 'obj-room-' + obj.id;
+
+    // Convert posX (0-1) to actual pixel position in 300vw scene
+    const px = (obj.posX * 300) + 'vw';
+    const py = (obj.posY * 100) + '%';
+
+    el.style.cssText = `left:${px}; top:${py}; position:absolute;`;
+
+    el.innerHTML = `
+      <span class="room-obj-emoji">${obj.emoji}</span>
+      <span class="room-obj-label">${obj.label}</span>
     `;
+
     el.addEventListener('click', () => {
-      closeTerminal();
-      showInspect(obj.inspect);
+      el.classList.remove('ping');
+      el.classList.add('found');
+      showInspect(obj.inspect, obj.id);
     });
-    container.appendChild(el);
+
+    // Stagger entrance animation
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.style.transition = 'opacity .5s ease';
+      el.style.opacity = '1';
+    }, 200 + i * 150);
+
+    layer.appendChild(el);
   });
 }
 
-function showInspect(data) {
-  document.getElementById('inspect-title').textContent = data.title;
-  document.getElementById('inspect-body').innerHTML = `
-    <p>${data.body.replace(/\n/g, '<br/>')}</p>
-    <span class="inspect-status status-${data.status}">${data.statusText}</span>
-  `;
+// ── Inspect ───────────────────────────────
+
+function showInspect(data, objId) {
+  document.getElementById('inspect-icon').textContent   = data.icon || '🖥️';
+  document.getElementById('inspect-title').textContent  = data.title;
+  document.getElementById('inspect-body').innerHTML     = data.body.replace(/\n/g,'<br/>');
+
+  // Status badge
+  const sw = document.getElementById('inspect-status-wrap');
+  const sb = document.getElementById('inspect-status');
+  sb.textContent  = data.statusText;
+  sb.className    = 'istatus';
+  const clsMap    = {ok:'istatus-ok', warn:'istatus-warn', err:'istatus-err'};
+  sb.classList.add(clsMap[data.status] || 'istatus-warn');
+
+  // Theory box
+  const theoryEl = document.getElementById('inspect-theory');
+  const theoryTxt = document.getElementById('theory-body');
+  if (data.theory) {
+    theoryTxt.textContent = data.theory;
+    theoryEl.classList.remove('hidden');
+  } else {
+    theoryEl.classList.add('hidden');
+  }
+
+  // Terminal button
+  const btn = document.getElementById('inspect-action');
+  if (data.triggerTerminal) {
+    btn.classList.remove('hidden');
+    btn.onclick = () => { closeInspect(); openTerminal(); };
+  } else {
+    btn.classList.add('hidden');
+  }
+
   document.getElementById('inspect-popup').classList.remove('hidden');
+  document.getElementById('terminal-wrap').classList.add('hidden');
 }
 
 function closeInspect() {
   document.getElementById('inspect-popup').classList.add('hidden');
 }
 
-// ── Dialog System (Visual Novel) ─────────────
+// ── Dialog ────────────────────────────────
 
 function showDialog() {
-  const level   = LEVELS[currentLevel];
-  const dialogs = level.dialogs;
-  if (!dialogs || currentDialog >= dialogs.length) return;
+  const lv = LEVELS[curLevel];
+  if (!lv.dialogs || curDialog >= lv.dialogs.length) return;
 
-  const d = dialogs[currentDialog];
-  document.getElementById('char-avatar').textContent = d.avatar;
-  document.getElementById('char-name').textContent   = d.name;
+  const d = lv.dialogs[curDialog];
+  document.getElementById('dlg-avatar').textContent = d.avatar;
+  document.getElementById('dlg-name').textContent   = d.name;
   document.getElementById('dialog-box').classList.remove('hidden');
 
-  // Typewriter
-  const textEl = document.getElementById('dialog-text');
+  const textEl = document.getElementById('dlg-text');
   textEl.textContent = '';
   let i = 0;
-  const type = setInterval(() => {
+  const t = setInterval(() => {
     textEl.textContent += d.text[i++];
-    if (i >= d.text.length) clearInterval(type);
-  }, 22);
+    if (i >= d.text.length) clearInterval(t);
+  }, 20);
 }
 
 function nextDialog() {
-  currentDialog++;
-  const level = LEVELS[currentLevel];
-
-  if (currentDialog < level.dialogs.length) {
+  curDialog++;
+  const lv = LEVELS[curLevel];
+  if (curDialog < lv.dialogs.length) {
     showDialog();
   } else {
     document.getElementById('dialog-box').classList.add('hidden');
-    showNotification('💡 Klik objek untuk investigasi, lalu gunakan terminal!');
+    showNotif('💡 Geser kiri/kanan untuk jelajahi ruangan, klik objek!');
   }
 }
 
-// ── Objectives ───────────────────────────────
+// ── Objectives ────────────────────────────
 
 function renderObjectives(objectives) {
-  const list = document.getElementById('objective-list');
-  list.innerHTML = '';
+  const ul = document.getElementById('obj-list');
+  ul.innerHTML = '';
   objectives.forEach(obj => {
     const li = document.createElement('li');
-    li.id = 'obj-' + obj.id;
+    li.id = 'li-' + obj.id;
     li.textContent = obj.text;
-    list.appendChild(li);
+    ul.appendChild(li);
   });
 }
 
 function completeObjective(id) {
-  if (completedObj.has(id)) return;
+  if (doneObj.has(id)) return;
 
-  const level = LEVELS[currentLevel];
-  const found = level.objectives.find(o => o.id === id);
-  if (!found) return;
+  const lv  = LEVELS[curLevel];
+  const obj = lv.objectives.find(o => o.id === id);
+  if (!obj) return;
 
-  completedObj.add(id);
-  const li = document.getElementById('obj-' + id);
+  doneObj.add(id);
+  const li = document.getElementById('li-' + id);
   if (li) li.classList.add('done');
 
   score += 20;
   document.getElementById('score').textContent = score;
-  showNotification(`✓ Selesai: ${found.text}`);
+  showNotif(`✓ Selesai: ${obj.text}`);
 
-  if (level.objectives.every(o => completedObj.has(o.id))) {
+  // Mark room object
+  const roomObj = document.getElementById('obj-room-' + id);
+  if (roomObj) roomObj.classList.add('found');
+
+  if (lv.objectives.every(o => doneObj.has(o.id))) {
     stopTimer();
-    setTimeout(showLevelComplete, 900);
+    setTimeout(showLevelComplete, 1000);
   }
 }
 
-// ── Timer ────────────────────────────────────
+// ── Hints ─────────────────────────────────
+
+function useHint() {
+  if (hintsLeft <= 0) {
+    showNotif('⚠️ Hint sudah habis!', true);
+    return;
+  }
+  const lv = LEVELS[curLevel];
+  const hintIdx = hintsUsed % lv.hints.length;
+  const hint = lv.hints[hintIdx];
+
+  // Show hint in dialog
+  document.getElementById('dlg-avatar').textContent = '💡';
+  document.getElementById('dlg-name').textContent   = 'Hint';
+  document.getElementById('dlg-text').textContent   = hint;
+  document.getElementById('dialog-box').classList.remove('hidden');
+
+  hintsLeft--;
+  hintsUsed++;
+  score = Math.max(0, score - 10);
+  document.getElementById('score').textContent = score;
+  document.getElementById('hint-count').textContent = `(${hintsLeft})`;
+
+  if (hintsLeft === 0) {
+    document.getElementById('hint-btn').disabled = true;
+  }
+}
+
+// ── Timer ─────────────────────────────────
 
 function startTimer() {
   stopTimer();
-  timerSeconds = 0;
-  timerInterval = setInterval(() => {
-    timerSeconds++;
-    const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-    const s = String(timerSeconds % 60).padStart(2, '0');
+  timerSec  = 0;
+  timerTick = setInterval(() => {
+    timerSec++;
+    const m = String(Math.floor(timerSec / 60)).padStart(2,'0');
+    const s = String(timerSec % 60).padStart(2,'0');
     document.getElementById('timer').textContent = `${m}:${s}`;
   }, 1000);
 }
 
 function stopTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
+  clearInterval(timerTick);
+  timerTick = null;
 }
 
-// ── Level Complete ───────────────────────────
+// ── Level Complete ────────────────────────
 
 function showLevelComplete() {
-  const level = LEVELS[currentLevel];
-  const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-  const s = String(timerSeconds % 60).padStart(2, '0');
+  const lv = LEVELS[curLevel];
+  const m  = String(Math.floor(timerSec / 60)).padStart(2,'0');
+  const s  = String(timerSec % 60).padStart(2,'0');
 
   let bonus = 0;
-  if (timerSeconds < 90)  bonus = 100;
-  else if (timerSeconds < 180) bonus = 60;
-  else if (timerSeconds < 300) bonus = 30;
+  if (timerSec < 90)  bonus = 100;
+  else if (timerSec < 180) bonus = 60;
+  else if (timerSec < 300) bonus = 30;
   score += bonus;
 
-  document.getElementById('complete-badge').textContent = level.badge;
-  document.getElementById('complete-score').textContent =
-    `⭐ Skor: ${score} poin${bonus > 0 ? ` (+${bonus} bonus kecepatan!)` : ''}`;
-  document.getElementById('complete-time').textContent =
-    `⏱️ Waktu: ${m}:${s}`;
+  const stars = timerSec < 90 ? '⭐⭐⭐' : timerSec < 180 ? '⭐⭐' : '⭐';
+  document.querySelector('.lc-stars').textContent = stars;
+  document.getElementById('lc-icon').textContent  = lv.badge.split(' ')[0];
+  document.getElementById('lc-badge').textContent = lv.badge;
+  document.getElementById('lc-score').textContent = score + (bonus ? ` (+${bonus})` : '');
+  document.getElementById('lc-time').textContent  = `${m}:${s}`;
+  document.getElementById('lc-hints').textContent = `${hintsUsed}x`;
+
   document.getElementById('level-complete').classList.remove('hidden');
 }
 
 function nextLevel() {
   document.getElementById('level-complete').classList.add('hidden');
-  currentLevel++;
+  curLevel++;
 
-  if (currentLevel < LEVELS.length) {
-    loadLevel(currentLevel);
+  if (curLevel < LEVELS.length) {
+    loadLevel(curLevel);
   } else {
     showGameComplete();
   }
 }
 
 function showGameComplete() {
+  Panorama.destroy();
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('main-menu').classList.remove('hidden');
 
-  document.querySelector('.menu-content').innerHTML = `
-    <div class="menu-icon">🏆</div>
-    <h1 style="color:var(--yellow);font-size:1.8rem">SELAMAT!</h1>
-    <p style="color:var(--text);margin:1rem 0;font-size:0.95rem;line-height:1.8">
-      Kamu telah menyelesaikan semua misi!<br/>
-      Berkat keahlianmu, Kota Netville kembali normal.<br/>
-      Kamu resmi menjadi <strong style="color:var(--accent-light)">
-      NetAdmin Hero Termuda!</strong> 🔥
+  document.querySelector('.menu-center').innerHTML = `
+    <div class="menu-icon-big" style="animation:none">🏆</div>
+    <h1 class="menu-title" style="font-size:2rem">
+      SELAMAT!<br/><span>NetAdmin Hero!</span>
+    </h1>
+    <p class="menu-tagline">
+      Semua misi selesai! Berkat keahlianmu,<br/>
+      Kota Netville kembali normal.<br/>
+      Kamu resmi menjadi <strong>Senior SysAdmin Termuda!</strong> 🔥
     </p>
-    <div style="font-size:1.4rem;margin:0.5rem 0;color:var(--yellow)">
-      ⭐ Total Skor: ${score} poin
+    <div style="font-size:1.6rem;margin:.5rem 0;color:var(--yellow)">⭐ ${score} poin</div>
+    <div class="menu-btns" style="margin-top:1.5rem">
+      <button class="mbtn mbtn-play" onclick="location.reload()">🔄 Main Lagi</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1.5rem">
-      <button class="btn-primary" onclick="location.reload()">🔄 Main Lagi</button>
-    </div>
-    <div class="menu-footer" style="margin-top:1.5rem">
-      SMK TKJ · Netville City · v1.0
-    </div>
+    <div class="menu-footer" style="margin-top:1.5rem">SMK TKJ · Netville City · v2.0</div>
   `;
 }
 
-// ── Notification ─────────────────────────────
+// ── Notification ──────────────────────────
 
-function showNotification(msg) {
-  const el = document.getElementById('notification');
+function showNotif(msg, warn = false) {
+  const el = document.getElementById('notif');
   el.textContent = msg;
+  el.className   = warn ? 'warn-notif' : '';
   el.classList.remove('hidden');
   el.style.animation = 'none';
   void el.offsetHeight;
-  el.style.animation = 'fadeInOut 3s forwards';
-  setTimeout(() => el.classList.add('hidden'), 3100);
+  el.style.animation = 'notifAnim 3s forwards';
+  setTimeout(() => el.classList.add('hidden'), 3200);
 }
 
-// ── Credits ──────────────────────────────────
+// ── UI Helpers ────────────────────────────
+
+function toggleObjPanel() {
+  const body   = document.getElementById('obj-body');
+  const toggle = document.getElementById('obj-toggle');
+  objPanelOpen = !objPanelOpen;
+  body.style.display  = objPanelOpen ? '' : 'none';
+  toggle.textContent  = objPanelOpen ? '▼' : '▲';
+}
+
+function toggleMinimap() {
+  const mm = document.getElementById('minimap');
+  minimapOpen = !minimapOpen;
+  mm.classList.toggle('hidden', !minimapOpen);
+}
+
+function goMainMenu() {
+  stopTimer();
+  Panorama.destroy();
+  document.getElementById('game-screen').classList.add('hidden');
+  document.getElementById('main-menu').classList.remove('hidden');
+}
+
+// ── Credits ───────────────────────────────
 
 function showCredits() {
   document.getElementById('main-menu').classList.add('hidden');
   document.getElementById('credits-screen').classList.remove('hidden');
 }
-
 function hideCredits() {
   document.getElementById('credits-screen').classList.add('hidden');
   document.getElementById('main-menu').classList.remove('hidden');

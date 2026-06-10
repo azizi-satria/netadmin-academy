@@ -1,0 +1,200 @@
+/* ══════════════════════════════════════════
+   SERVER ROOM — VISUAL ENVIRONMENT
+══════════════════════════════════════════ */
+
+/* ── CEILING ─────────────────────────────── */
+.layer-ceiling{
+  height:18%;top:0;
+  background:linear-gradient(to bottom,#050510,#0a0a18);
+  border-bottom:2px solid #1a1a30;
+  z-index:1;
+}
+.ceiling-lights{
+  position:absolute;bottom:0;left:0;right:0;
+  display:flex;justify-content:space-around;align-items:flex-end;
+}
+.ceil-light{
+  width:14%;height:12px;
+  background:linear-gradient(to bottom,#ffffff08,#00d4ff22);
+  border-top:2px solid #334;
+  position:relative;
+}
+.ceil-light::after{
+  content:'';position:absolute;
+  bottom:-60px;left:-30%;width:160%;height:60px;
+  background:linear-gradient(to bottom,rgba(0,212,255,.08),transparent);
+  pointer-events:none;
+}
+.ceiling-cable-tray{
+  position:absolute;top:4px;left:0;right:0;height:8px;
+  background:repeating-linear-gradient(90deg,#1a1a30 0,#1a1a30 30px,#222235 30px,#222235 60px);
+}
+
+/* ── BACKGROUND WALL ─────────────────────── */
+.layer-bg{z-index:2}
+.bg-wall{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,#0a0a18 0%,#0d0d20 60%,#080812 100%);
+}
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(124,58,237,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,58,237,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* ── MIDDLE LAYER — RACKS ────────────────── */
+.layer-mid{z-index:3}
+
+.rack{
+  position:absolute;
+  bottom:20%;
+  width:9%;
+  background:linear-gradient(to bottom,#1a1a2e,#0f0f1e);
+  border:1px solid #2a2a4a;
+  border-radius:4px 4px 2px 2px;
+  padding:6px 4px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 4px 20px rgba(0,0,0,.5),
+    0 0 40px rgba(0,0,0,.3);
+  height:45%;
+}
+
+.rack-unit{
+  height:14%;
+  background:linear-gradient(135deg,#151525,#1e1e35);
+  border:1px solid #2a2a45;
+  border-radius:2px;
+  margin-bottom:3px;
+  position:relative;
+  overflow:hidden;
+}
+.rack-unit::before{
+  content:'';position:absolute;
+  left:6px;top:50%;transform:translateY(-50%);
+  width:8px;height:8px;border-radius:50%;
+  background:#222;border:1px solid #333;
+}
+.rack-unit::after{
+  content:'';position:absolute;
+  left:6px;top:50%;transform:translateY(-50%);
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 6px var(--green);
+}
+
+.rack-unit.blink-slow::after{
+  animation:blinkLed 2.5s ease-in-out infinite;
+}
+.rack-unit.blink-fast::after{
+  animation:blinkLed .6s ease-in-out infinite;
+  background:var(--cyan);box-shadow:0 0 6px var(--cyan);
+}
+
+@keyframes blinkLed{
+  0%,100%{opacity:1}
+  50%{opacity:.1}
+}
+
+.rack-label{
+  position:absolute;bottom:-20px;left:50%;
+  transform:translateX(-50%);
+  font-size:.55rem;color:#556;
+  white-space:nowrap;font-family:monospace;
+  letter-spacing:.05em;
+}
+
+/* Cables between racks */
+.cables{position:absolute;inset:0;pointer-events:none}
+.cable{
+  position:absolute;width:3px;border-radius:2px;
+  opacity:.6;
+}
+.cable-blue{background:linear-gradient(to bottom,transparent,#0066ff,#003388)}
+.cable-green{background:linear-gradient(to bottom,transparent,#00cc44,#006622)}
+.cable-yellow{background:linear-gradient(to bottom,transparent,#ffcc00,#886600)}
+.cable-red{background:linear-gradient(to bottom,transparent,#ff3300,#881100)}
+
+/* ── FRONT LAYER — INTERACTIVE OBJECTS ────── */
+.layer-front{z-index:10}
+
+.room-obj{
+  position:absolute;
+  cursor:pointer;
+  transition:transform .25s, filter .25s;
+  text-align:center;
+}
+.room-obj:hover{
+  transform:scale(1.12) translateY(-6px);
+  filter:brightness(1.4) drop-shadow(0 0 20px rgba(168,85,247,.9));
+}
+.room-obj-emoji{
+  font-size:3.8rem;display:block;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
+}
+.room-obj-label{
+  display:block;margin-top:.2rem;
+  font-size:.65rem;color:rgba(255,255,255,.5);
+  background:rgba(0,0,0,.6);
+  padding:2px 8px;border-radius:999px;
+  border:1px solid rgba(124,58,237,.3);
+  white-space:nowrap;
+  opacity:0;transition:opacity .2s;
+  font-family:'Segoe UI',sans-serif;
+}
+.room-obj:hover .room-obj-label{opacity:1}
+
+/* Found badge */
+.room-obj.found .room-obj-emoji{filter:drop-shadow(0 0 10px rgba(16,185,129,.7))}
+.room-obj.found::after{
+  content:'✓';
+  position:absolute;top:-8px;right:-8px;
+  background:var(--green);color:#fff;
+  width:18px;height:18px;border-radius:50%;
+  font-size:.7rem;display:flex;align-items:center;justify-content:center;
+  font-family:sans-serif;
+}
+
+/* Ping animation on undiscovered objects */
+.room-obj.ping::before{
+  content:'';position:absolute;
+  inset:-8px;border-radius:50%;
+  border:2px solid var(--cyan);
+  animation:pingAnim 2s ease-out infinite;
+  pointer-events:none;
+}
+@keyframes pingAnim{
+  0%{transform:scale(.8);opacity:.8}
+  100%{transform:scale(1.6);opacity:0}
+}
+
+/* ── FLOOR ───────────────────────────────── */
+.layer-floor{
+  z-index:2;
+  position:absolute;bottom:0;left:0;right:0;
+  height:22%;
+}
+.floor-tiles{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(to bottom,#06060f,#0a0a18),
+    repeating-linear-gradient(90deg,transparent 0,transparent 59px,rgba(124,58,237,.06) 59px,rgba(124,58,237,.06) 60px),
+    repeating-linear-gradient(0deg,transparent 0,transparent 29px,rgba(124,58,237,.06) 29px,rgba(124,58,237,.06) 30px);
+}
+.floor-reflection{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(124,58,237,.04),transparent);
+}
+
+/* ── AMBIENT LIGHTS ──────────────────────── */
+.ambient-light{
+  position:absolute;border-radius:50%;
+  pointer-events:none;z-index:1;
+  animation:ambientPulse 4s ease-in-out infinite;
+}
+@keyframes ambientPulse{
+  0%,100%{opacity:.4}
+  50%{opacity:.7}
+}
