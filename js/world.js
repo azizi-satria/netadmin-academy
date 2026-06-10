@@ -15,13 +15,13 @@ const World = (() => {
     moving: false
   };
   const SPEED      = 5.5;
-  const PLAYER_H   = 0;   // mesh sits on floor
-  const CAM_DIST   = 5;
-  const CAM_HEIGHT = 3.5;
+  const PLAYER_H   = 0;
+  const CAM_DIST   = 4;
+  const CAM_HEIGHT = 1.8;
 
   // ── Camera orbit ──────────────────────────
-  let camH = 0;          // horizontal orbit angle (locked to player.rot + offset)
-  let camV = 0.35;       // vertical tilt (radians)
+  let camH = 0;
+  let camV = 0.28;       // vertical tilt — keep camera inside room
   let pointerLocked = false;
 
   // ── Input ─────────────────────────────────
@@ -92,7 +92,7 @@ const World = (() => {
     document.addEventListener('mousemove', e => {
       if (!pointerLocked) return;
       camH -= e.movementX * 0.003;
-      camV  = Math.max(0.1, Math.min(0.7, camV - e.movementY * 0.002));
+      camV  = Math.max(0.05, Math.min(0.45, camV - e.movementY * 0.002));
     });
 
     document.addEventListener('keydown', e => {
