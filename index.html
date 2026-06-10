@@ -3,13 +3,44 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NetAdmin Academy</title>
+  <title>NetAdmin Academy 3D</title>
   <link rel="stylesheet" href="css/style.css"/>
-  <link rel="stylesheet" href="css/scene.css"/>
+  <style>
+    canvas{display:block;position:fixed;inset:0;z-index:0}
+    #fade-overlay{position:fixed;inset:0;background:#000;pointer-events:none;opacity:0;transition:opacity .55s;z-index:50}
+    #click-to-start{position:fixed;inset:0;background:rgba(5,5,14,.85);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;gap:1rem;display:none}
+    #click-to-start .cts-ico{font-size:4rem}
+    #click-to-start h2{font-size:1.4rem;font-weight:800}
+    #click-to-start p{color:#666;font-size:.82rem;text-align:center;line-height:1.8}
+    #click-to-start .cts-keys{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;justify-content:center}
+    .key-badge{background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.5);color:#a855f7;padding:3px 10px;border-radius:6px;font-size:.78rem;font-weight:700}
+    #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;pointer-events:none;z-index:20}
+    #crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.75);border-radius:2px}
+    #crosshair::before{width:2px;height:100%;left:50%;transform:translateX(-50%)}
+    #crosshair::after{height:2px;width:100%;top:50%;transform:translateY(-50%)}
+    #interact-prompt{position:fixed;bottom:36%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid rgba(124,58,237,.6);color:#a855f7;padding:5px 18px;border-radius:20px;font-size:.82rem;font-weight:700;display:none;z-index:20}
+    #hud,#dialog-box,#inspect-box,#term-overlay,#obj-panel,#loc-label,#notif,#lvl-complete,#loading-screen,#main-menu,#howto-screen,#credits-screen{z-index:80;position:fixed}
+  </style>
 </head>
 <body>
 
-<!-- ══════════ LOADING ══════════ -->
+<canvas id="c"></canvas>
+<div id="fade-overlay"></div>
+<div id="click-to-start">
+  <div class="cts-ico">🖥️</div>
+  <h2>Klik untuk Bermain</h2>
+  <p>Pointer akan dikunci untuk kontrol kamera</p>
+  <div class="cts-keys">
+    <span class="key-badge">W A S D — Jalan</span>
+    <span class="key-badge">Mouse — Kamera</span>
+    <span class="key-badge">E — Interaksi</span>
+    <span class="key-badge">ESC — Lepas</span>
+  </div>
+</div>
+
+<div id="crosshair" class="hidden"></div>
+<div id="interact-prompt"></div>
+
 <div id="loading-screen">
   <div class="ld-wrap">
     <div class="ld-logo">⚡</div>
@@ -20,7 +51,6 @@
   </div>
 </div>
 
-<!-- ══════════ MAIN MENU ══════════ -->
 <div id="main-menu" class="hidden">
   <div class="mm-bg">
     <div class="mm-stars" id="mm-stars"></div>
@@ -30,53 +60,46 @@
   <div class="mm-card">
     <div class="mm-icon">🖥️</div>
     <h1 class="mm-title">NetAdmin<span>Academy</span></h1>
-    <p class="mm-desc">Masuki ruang server · Temui klien · Selesaikan misi jaringan</p>
+    <p class="mm-desc">Jelajahi Netville · Masuki server room · Selesaikan misi jaringan</p>
     <div class="mm-btns">
       <button class="btn-main" onclick="startGame()">▶ Mulai Petualangan</button>
       <button class="btn-sub"  onclick="showHowTo()">📖 Cara Bermain</button>
       <button class="btn-sub"  onclick="showCredits()">ℹ️ Tentang</button>
     </div>
-    <p class="mm-ver">SMK TKJ · Netville City · v3.0</p>
+    <p class="mm-ver">SMK TKJ · Netville City · v4.0 (3D)</p>
   </div>
 </div>
 
-<!-- ══════════ HOW TO PLAY ══════════ -->
 <div id="howto-screen" class="hidden overlay-screen">
   <div class="info-card">
     <h2>📖 Cara Bermain</h2>
     <div class="howto-list">
-      <div class="howto-item"><span class="hi-num">1</span><div><strong>Jelajahi Ruangan</strong><br/>Klik panah atau tombol navigasi untuk berpindah lokasi</div></div>
-      <div class="howto-item"><span class="hi-num">2</span><div><strong>Buka Pintu</strong><br/>Klik pintu untuk membukanya dan masuk ke ruangan</div></div>
-      <div class="howto-item"><span class="hi-num">3</span><div><strong>Temui Karakter</strong><br/>Klik karakter untuk bicara dan dapat misi</div></div>
-      <div class="howto-item"><span class="hi-num">4</span><div><strong>Inspeksi Objek</strong><br/>Klik objek di ruangan untuk mendapat info dan petunjuk</div></div>
-      <div class="howto-item"><span class="hi-num">5</span><div><strong>Gunakan Terminal</strong><br/>Ketik command Linux nyata untuk selesaikan masalah</div></div>
-      <div class="howto-item"><span class="hi-num">6</span><div><strong>Selesaikan Misi</strong><br/>Checklist objektif harus semua centang untuk lanjut</div></div>
+      <div class="howto-item"><span class="hi-num">1</span><div><strong>Gerak</strong><br/>WASD atau Arrow Keys untuk berjalan</div></div>
+      <div class="howto-item"><span class="hi-num">2</span><div><strong>Kamera</strong><br/>Klik game lalu gerakkan mouse untuk melihat sekeliling</div></div>
+      <div class="howto-item"><span class="hi-num">3</span><div><strong>Interaksi</strong><br/>Dekati karakter/objek lalu tekan E</div></div>
+      <div class="howto-item"><span class="hi-num">4</span><div><strong>Terminal</strong><br/>Ketik command Linux nyata untuk selesaikan misi</div></div>
+      <div class="howto-item"><span class="hi-num">5</span><div><strong>Lepas Kursor</strong><br/>Tekan ESC untuk lepas kontrol kamera</div></div>
     </div>
     <button class="btn-main" onclick="hideHowTo()">Mengerti! ✓</button>
   </div>
 </div>
 
-<!-- ══════════ CREDITS ══════════ -->
 <div id="credits-screen" class="hidden overlay-screen">
   <div class="info-card">
-    <h2>⚡ NetAdmin Academy</h2>
-    <p>Game Edukasi First-Person Adventure</p>
-    <p>untuk Siswa SMK Jurusan TKJ</p>
+    <h2>⚡ NetAdmin Academy 3D</h2>
+    <p>Game Edukasi 3D Adventure untuk SMK TKJ</p>
     <hr/>
+    <p>🎮 Engine: Three.js (WebGL)</p>
     <p>📚 Materi: Administrasi Server Linux</p>
-    <p>🎯 Kompetensi: TKJ / SIJA</p>
     <p>🏙️ Setting: Kota Netville</p>
     <button class="btn-sub" onclick="hideCredits()" style="margin-top:1rem">← Kembali</button>
   </div>
 </div>
 
-<!-- ══════════ GAME ══════════ -->
 <div id="game-screen" class="hidden">
-
-  <!-- HUD -->
   <div id="hud">
     <div class="hud-l">
-      <button class="hud-back" onclick="goMenu()" title="Menu">☰</button>
+      <button class="hud-back" onclick="goMenu()">☰</button>
       <div>
         <div id="hud-lv">Level 1</div>
         <div id="hud-ms">—</div>
@@ -85,23 +108,10 @@
     <div class="hud-r">
       <div class="hud-chip">⏱ <span id="hud-time">00:00</span></div>
       <div class="hud-chip">⭐ <span id="hud-score">0</span></div>
-      <button class="hud-hint" id="hud-hint" onclick="useHint()">💡 <span id="hint-left">3</span></button>
+      <button class="hud-hint" onclick="useHint()">💡 <span id="hint-left">3</span></button>
     </div>
   </div>
 
-  <!-- WORLD — scene renders here -->
-  <div id="world">
-    <div id="scene-wrap">
-      <!-- Scene content injected by JS -->
-    </div>
-
-    <!-- Navigation arrows -->
-    <button class="nav-arrow nav-left  hidden" id="nav-left"  onclick="navLeft()">❮</button>
-    <button class="nav-arrow nav-right hidden" id="nav-right" onclick="navRight()">❯</button>
-    <button class="nav-arrow nav-back  hidden" id="nav-back"  onclick="navBack()">↩ Keluar</button>
-  </div>
-
-  <!-- DIALOG BOX -->
   <div id="dialog-box" class="hidden">
     <div class="dlg-left">
       <div class="dlg-ava" id="dlg-ava"></div>
@@ -113,7 +123,6 @@
     </div>
   </div>
 
-  <!-- INSPECT CARD -->
   <div id="inspect-box" class="hidden">
     <div class="ins-card">
       <div class="ins-head">
@@ -133,7 +142,6 @@
     </div>
   </div>
 
-  <!-- TERMINAL -->
   <div id="term-overlay" class="hidden">
     <div id="terminal">
       <div class="trm-head">
@@ -149,26 +157,18 @@
     </div>
   </div>
 
-  <!-- OBJECTIVES -->
   <div id="obj-panel">
-    <div class="obj-ttl" onclick="toggleObj()">
-      📋 Misi <span id="obj-tog">▾</span>
-    </div>
+    <div class="obj-ttl" onclick="toggleObj()">📋 Misi <span id="obj-tog">▾</span></div>
     <div id="obj-inner">
       <ul id="obj-ul"></ul>
       <button class="obj-term-btn" onclick="openTerm()">💻 Terminal</button>
     </div>
   </div>
 
-  <!-- LOCATION LABEL -->
   <div id="loc-label" class="hidden"></div>
-
-  <!-- NOTIF -->
   <div id="notif" class="hidden"></div>
+</div>
 
-</div><!-- /game-screen -->
-
-<!-- ══════════ LEVEL COMPLETE ══════════ -->
 <div id="lvl-complete" class="hidden">
   <div class="lc-card">
     <div class="lc-burst" id="lc-burst">🏆</div>
@@ -183,9 +183,10 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/terminal.js"></script>
-<script src="js/engine.js"></script>
+<script src="js/world.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
