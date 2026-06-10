@@ -70,10 +70,15 @@ const World = (() => {
   // CONTROLS
   // ─────────────────────────────────────────
   function setupControls(canvas) {
-    canvas.addEventListener('click', () => {
+    function requestLock() {
       if (isUIOpen()) return;
       canvas.requestPointerLock();
-    });
+    }
+    canvas.addEventListener('click', requestLock);
+
+    // Also allow clicking the overlay to start
+    const cts = document.getElementById('click-to-start');
+    if (cts) cts.addEventListener('click', requestLock);
 
     document.addEventListener('pointerlockchange', () => {
       pointerLocked = document.pointerLockElement === canvas;
@@ -98,8 +103,8 @@ const World = (() => {
   }
 
   function isUIOpen() {
-    return !['dialog-box','inspect-box','term-overlay'].every(id =>
-      document.getElementById(id).classList.contains('hidden')
+    return ['dialog-box','inspect-box','term-overlay'].some(id =>
+      !document.getElementById(id).classList.contains('hidden')
     );
   }
 
