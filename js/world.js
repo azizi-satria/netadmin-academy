@@ -1,98 +1,82 @@
 // ════════════════════════════════════════════
-// WORLD — Three.js 3D Engine (NetAdmin Academy)
+// WORLD — First-Person 3D Engine (Three.js)
 // ════════════════════════════════════════════
 
 const World = (() => {
 
-  // ── Core ──────────────────────────────────
   let scene, camera, renderer, clock;
 
-  // ── Player state ──────────────────────────
-  const player = {
-    mesh: null,
-    pos:  new THREE.Vector3(0, 0, 7),
-    rot:  Math.PI,   // facing -Z (toward door)
-    moving: false
-  };
-  const SPEED      = 5.5;
-  const PLAYER_H   = 0;
-  const CAM_DIST   = 4;
-  const CAM_HEIGHT = 1.8;
-
-  // ── Camera orbit ──────────────────────────
-  let camH = 0;
-  let camV = 0.28;       // vertical tilt — keep camera inside room
+  // ── FPS state ─────────────────────────────
+  let yaw = 0, pitch = 0;
   let pointerLocked = false;
-
-  // ── Input ─────────────────────────────────
   const keys = {};
+  const SPEED  = 6;
+  const EYE_H  = 1.65;
 
   // ── Room ──────────────────────────────────
-  let currentRoom   = null;
-  let roomMeshes    = [];
+  let currentRoom = null;
+  let roomObjects = [];
   let interactables = [];
-  let animFns       = [];
+  let animFns = [];
 
-  // ── Callbacks (set by game.js) ────────────
-  let onInteractCb  = null;
-  let onDoorCb      = null;
+  // ── Callback ──────────────────────────────
+  let onInteractCb = null;
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   // INIT
-  // ─────────────────────────────────────────
-  function init(interactCallback) {
-    onInteractCb = interactCallback;
+  // ══════════════════════════════════════════
+  function init(interactCb) {
+    onInteractCb = interactCb;
 
-    const canvas = document.getElementById('c');
-
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x05050e);
-    scene.fog = new THREE.FogExp2(0x05050e, 0.045);
+    scene.fog = new THREE.FogExp2(0x05050e, 0.04);
 
-    camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 80);
-    clock  = new THREE.Clock();
+    camera = new THREE.PerspectiveCamera(80, innerWidth / innerHeight, 0.05, 60);
+    camera.position.set(0, EYE_H, 8);
 
-    // Global ambient
-    scene.add(new THREE.AmbientLight(0x111133, 0.6));
+    clock = new THREE.Clock();
+    scene.add(new THREE.AmbientLight(0x111133, 0.8));
 
-    setupControls(canvas);
-    window.addEventListener('resize', onResize);
+    setupControls();
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
     animate();
   }
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   // CONTROLS
-  // ─────────────────────────────────────────
-  function setupControls(canvas) {
-    function requestLock() {
-      if (isUIOpen() || !gameActive()) return;
+  // ══════════════════════════════════════════
+  function setupControls() {
+    const canvas = document.getElementById('c');
+
+    // Click anywhere on game to lock pointer
+    document.addEventListener('click', e => {
+      if (isUIOpen()) return;
+      if (!gameActive()) return;
       canvas.requestPointerLock();
-    }
-    canvas.addEventListener('click', requestLock);
-    document.getElementById('click-to-start').addEventListener('click', requestLock);
+    });
 
     document.addEventListener('pointerlockchange', () => {
       pointerLocked = document.pointerLockElement === canvas;
-      const el = document.getElementById('click-to-start');
-      if (el) {
-        // Only show overlay if game is active AND no UI panel is open
-        const showOverlay = !pointerLocked && gameActive() && !isUIOpen();
-        el.style.display = showOverlay ? 'flex' : 'none';
-      }
+      refreshOverlay();
       const ch = document.getElementById('crosshair');
       if (ch) ch.classList.toggle('hidden', !pointerLocked);
     });
 
     document.addEventListener('mousemove', e => {
       if (!pointerLocked) return;
-      camH -= e.movementX * 0.003;
-      camV  = Math.max(0.05, Math.min(0.45, camV - e.movementY * 0.002));
+      yaw   -= e.movementX * 0.0022;
+      pitch  = Math.max(-1.2, Math.min(1.2, pitch - e.movementY * 0.0022));
     });
 
     document.addEventListener('keydown', e => {
@@ -103,9 +87,15 @@ const World = (() => {
     document.addEventListener('keyup', e => { keys[e.code] = false; });
   }
 
+  function refreshOverlay() {
+    const el = document.getElementById('click-to-start');
+    if (!el) return;
+    el.style.display = (!pointerLocked && gameActive() && !isUIOpen()) ? 'flex' : 'none';
+  }
+
   function isUIOpen() {
-    return ['dialog-box','inspect-box','term-overlay'].some(id =>
-      !document.getElementById(id).classList.contains('hidden')
+    return ['dialog-box','inspect-box','term-overlay'].some(
+      id => !document.getElementById(id).classList.contains('hidden')
     );
   }
 
@@ -113,587 +103,351 @@ const World = (() => {
     return !document.getElementById('game-screen').classList.contains('hidden');
   }
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   // INTERACT
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   function tryInteract() {
-    if (!pointerLocked) return;
     const near = getNearestInteractable();
     if (!near) return;
-    if (near.itype === 'door' && near.doorFn) {
-      near.doorFn();
-    } else if (onInteractCb) {
-      onInteractCb(near.itype, near.iid);
-    }
+    if (near.doorFn) { near.doorFn(); return; }
+    if (onInteractCb) onInteractCb(near.itype, near.iid);
   }
 
   function getNearestInteractable() {
-    let best = null, bestD = 3.2;
-    interactables.forEach(obj => {
-      const d = player.pos.distanceTo(obj.worldPos);
-      if (d < bestD) { bestD = d; best = obj; }
+    let best = null, bestD = 3.5;
+    interactables.forEach(o => {
+      const d = camera.position.distanceTo(o.pos);
+      if (d < bestD) { bestD = d; best = o; }
     });
     return best;
   }
 
-  function updateInteractPrompt() {
+  function updatePrompt() {
     const el = document.getElementById('interact-prompt');
     if (!el) return;
     const near = pointerLocked ? getNearestInteractable() : null;
-    if (near) {
-      el.textContent = '[E]  ' + near.label;
-      el.style.display = 'block';
-    } else {
-      el.style.display = 'none';
-    }
+    if (near) { el.textContent = '[E]  ' + near.label; el.style.display = 'block'; }
+    else el.style.display = 'none';
   }
 
-  // ─────────────────────────────────────────
-  // CAMERA HELPERS
-  // ─────────────────────────────────────────
-  function positionCameraImmediate() {
-    const camX = player.pos.x + Math.sin(camH) * CAM_DIST * Math.cos(camV);
-    const camY = PLAYER_H + CAM_HEIGHT + Math.sin(camV) * CAM_DIST;
-    const camZ = player.pos.z + Math.cos(camH) * CAM_DIST * Math.cos(camV);
-    camera.position.set(camX, camY, camZ);
-    camera.lookAt(player.pos.x, PLAYER_H + 1.5, player.pos.z);
-  }
-
-  // ─────────────────────────────────────────
-  // PLAYER MOVEMENT (third-person)
-  // ─────────────────────────────────────────
-  function updatePlayer(dt) {
-    if (!player.mesh) return;
-
-    // Always update camera to follow player (even when not locked)
-    const camX = player.pos.x + Math.sin(camH) * CAM_DIST * Math.cos(camV);
-    const camY = PLAYER_H + CAM_HEIGHT + Math.sin(camV) * CAM_DIST;
-    const camZ = player.pos.z + Math.cos(camH) * CAM_DIST * Math.cos(camV);
-    camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.12);
-    camera.lookAt(player.pos.x, PLAYER_H + 1.5, player.pos.z);
-
+  // ══════════════════════════════════════════
+  // MOVEMENT
+  // ══════════════════════════════════════════
+  function updateMovement(dt) {
     if (!pointerLocked) return;
 
-    // Camera-relative movement directions
-    const fwd   = new THREE.Vector3(-Math.sin(camH), 0, -Math.cos(camH));
-    const right  = new THREE.Vector3( Math.cos(camH), 0, -Math.sin(camH));
-    const dir    = new THREE.Vector3();
+    const fwd   = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const right  = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
+    const move   = new THREE.Vector3();
 
-    if (keys['KeyW'] || keys['ArrowUp'])    dir.add(fwd);
-    if (keys['KeyS'] || keys['ArrowDown'])  dir.sub(fwd);
-    if (keys['KeyA'] || keys['ArrowLeft'])  dir.sub(right);
-    if (keys['KeyD'] || keys['ArrowRight']) dir.add(right);
+    if (keys['KeyW'] || keys['ArrowUp'])    move.add(fwd);
+    if (keys['KeyS'] || keys['ArrowDown'])  move.sub(fwd);
+    if (keys['KeyA'] || keys['ArrowLeft'])  move.sub(right);
+    if (keys['KeyD'] || keys['ArrowRight']) move.add(right);
 
-    player.moving = dir.lengthSq() > 0;
-
-    if (player.moving) {
-      dir.normalize();
-      player.rot = Math.atan2(dir.x, dir.z);
-
-      const next = player.pos.clone().addScaledVector(dir, SPEED * dt);
+    if (move.lengthSq() > 0) {
+      move.normalize().multiplyScalar(SPEED * dt);
+      const next = camera.position.clone().add(move);
       if (currentRoom) {
         const b = currentRoom.bounds;
-        next.x = Math.max(b.x0 + 0.5, Math.min(b.x1 - 0.5, next.x));
-        next.z = Math.max(b.z0 + 0.5, Math.min(b.z1 - 0.5, next.z));
+        next.x = Math.max(b.x0 + 0.3, Math.min(b.x1 - 0.3, next.x));
+        next.z = Math.max(b.z0 + 0.3, Math.min(b.z1 - 0.3, next.z));
       }
-      player.pos.copy(next);
+      next.y = EYE_H;
+      camera.position.copy(next);
     }
 
-    player.mesh.position.set(player.pos.x, PLAYER_H, player.pos.z);
-    player.mesh.rotation.y = player.rot;
-
-    // Walk bob animation
-    const t = clock.elapsedTime;
-    if (player.moving) {
-      player.mesh.position.y = Math.abs(Math.sin(t * 8)) * 0.04;
-    }
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
   }
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   // ANIMATE
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
-    const t  = clock.elapsedTime;
-
-    updatePlayer(dt);
-    updateInteractPrompt();
-    animFns.forEach(fn => fn(t, dt));
-
+    updateMovement(dt);
+    updatePrompt();
+    animFns.forEach(fn => fn(clock.elapsedTime, dt));
     renderer.render(scene, camera);
   }
 
-  function onResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+  // ══════════════════════════════════════════
+  // HELPERS
+  // ══════════════════════════════════════════
+  function addR(obj) { scene.add(obj); roomObjects.push(obj); return obj; }
+
+  function clearRoom() {
+    roomObjects.forEach(o => scene.remove(o));
+    roomObjects = []; interactables = []; animFns = [];
   }
 
-  // ─────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────
-  function mkBox(w, h, d, color, emissive, emissInt) {
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const mat = new THREE.MeshStandardMaterial({
-      color: color,
-      roughness: 0.8, metalness: 0.15,
-      emissive:          emissive  ? new THREE.Color(emissive)  : undefined,
-      emissiveIntensity: emissInt  || 0
-    });
-    const m = new THREE.Mesh(geo, mat);
-    m.castShadow    = true;
-    m.receiveShadow = true;
+  function box(w, h, d, col, emCol, emInt) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({
+        color: col,
+        roughness: 0.85, metalness: 0.1,
+        emissive:          emCol ? new THREE.Color(emCol) : undefined,
+        emissiveIntensity: emInt || 0
+      })
+    );
+    m.receiveShadow = true; m.castShadow = true;
     return m;
   }
 
-  function addR(obj) { scene.add(obj); roomMeshes.push(obj); return obj; }
-
-  function clearRoom() {
-    roomMeshes.forEach(o => scene.remove(o));
-    roomMeshes    = [];
-    interactables = [];
-    animFns       = [];
+  function light(col, intensity, dist, x, y, z) {
+    const l = new THREE.PointLight(col, intensity, dist);
+    l.position.set(x, y, z);
+    return addR(l);
   }
 
-  // ─────────────────────────────────────────
-  // PLAYER CHARACTER (Roblox-like blocks)
-  // ─────────────────────────────────────────
-  function makePlayer() {
-    if (player.mesh) scene.remove(player.mesh);
-    const g = new THREE.Group();
-
-    // Torso
-    const torso = mkBox(0.55, 0.65, 0.32, 0x2563eb, 0x1a40a0, 0.1);
-    torso.position.y = 1.15;
-    g.add(torso);
-
-    // Head
-    const head = mkBox(0.5, 0.5, 0.5, 0xffcc99, null, 0);
-    head.position.y = 1.7;
-    g.add(head);
-
-    // Eyes
-    [-0.13, 0.13].forEach(x => {
-      const eye = mkBox(0.08, 0.08, 0.06, 0x222266, 0x4444ff, 0.5);
-      eye.position.set(x, 1.72, 0.24);
-      g.add(eye);
-    });
-
-    // Arms
-    [-0.42, 0.42].forEach((x, i) => {
-      const arm = mkBox(0.22, 0.6, 0.28, i === 0 ? 0x1d4ed8 : 0x1d4ed8, null, 0);
-      arm.position.set(x, 1.05, 0);
-      g.add(arm);
-    });
-
-    // Legs
-    [-0.17, 0.17].forEach((x, i) => {
-      const leg = mkBox(0.24, 0.65, 0.3, i === 0 ? 0x1e3a5f : 0x1a3355, null, 0);
-      leg.position.set(x, 0.32, 0);
-      g.add(leg);
-    });
-
-    // Feet
-    [-0.17, 0.17].forEach(x => {
-      const foot = mkBox(0.26, 0.12, 0.36, 0x111111, null, 0);
-      foot.position.set(x, 0, 0.04);
-      g.add(foot);
-    });
-
-    scene.add(g);
-    player.mesh = g;
-    return g;
-  }
-
-  // ─────────────────────────────────────────
-  // NPC CHARACTER
-  // ─────────────────────────────────────────
-  function makeNPC(x, z, color, name) {
-    const g = new THREE.Group();
-    g.position.set(x, 0, z);
-
-    const torsoC = color || 0x7c3aed;
-    const torso = mkBox(0.55, 0.65, 0.32, torsoC, torsoC, 0.15);
-    torso.position.y = 1.15;
-    g.add(torso);
-
-    const head = mkBox(0.5, 0.5, 0.5, 0xffddaa, null, 0);
-    head.position.y = 1.7;
-    g.add(head);
-
-    [-0.13, 0.13].forEach(x2 => {
-      const eye = mkBox(0.08, 0.08, 0.06, 0x222244, 0x6644ff, 0.6);
-      eye.position.set(x2, 1.72, 0.24);
-      g.add(eye);
-    });
-
-    [-0.42, 0.42].forEach(x2 => {
-      const arm = mkBox(0.22, 0.6, 0.28, torsoC, null, 0);
-      arm.position.set(x2, 1.05, 0);
-      g.add(arm);
-    });
-
-    [-0.17, 0.17].forEach(x2 => {
-      const leg = mkBox(0.24, 0.65, 0.3, 0x333366, null, 0);
-      leg.position.set(x2, 0.32, 0);
-      g.add(leg);
-    });
-
-    // Bob animation
-    const offset = Math.random() * Math.PI * 2;
-    animFns.push(t => {
-      g.position.y = Math.sin(t * 1.8 + offset) * 0.04;
-    });
-
-    addR(g);
-    return g;
-  }
-
-  // ─────────────────────────────────────────
-  // CORRIDOR ROOM
-  // ─────────────────────────────────────────
-  function loadCorridor(levelData, doorCallback) {
+  // ══════════════════════════════════════════
+  // CORRIDOR
+  // ══════════════════════════════════════════
+  function loadCorridor(levelData, doorCb) {
     clearRoom();
-    onDoorCb = doorCallback;
+    const W = 6, H = 4, L = 24;
+    currentRoom = { bounds: { x0:-W/2, x1:W/2, z0:-L/2, z1:L/2 } };
 
-    const W = 7, H = 4.5, L = 22;
-    currentRoom = { type:'corridor', bounds:{ x0:-W/2, x1:W/2, z0:-L/2, z1:L/2 } };
+    camera.position.set(0, EYE_H, 8);
+    yaw = Math.PI; pitch = 0;
 
-    // Spawn player
-    makePlayer();
-    player.pos.set(0, 0, 8);
-    player.rot = Math.PI;
-    camH = Math.PI;
-    positionCameraImmediate();
+    // Floor / ceiling / walls
+    const fl = box(W, 0.1, L, 0x0a0a18); fl.position.set(0, -0.05, 0); addR(fl);
+    const ce = box(W, 0.1, L, 0x060610); ce.position.set(0, H, 0);     addR(ce);
+    const wL = box(0.15, H, L, 0x0d0d22); wL.position.set(-W/2, H/2, 0); addR(wL);
+    const wR = box(0.15, H, L, 0x0d0d22); wR.position.set( W/2, H/2, 0); addR(wR);
+    const wB = box(W, H, 0.15, 0x0d0d22); wB.position.set(0, H/2, L/2); addR(wB);
 
-    // ── Floor ─────────────────────────────
-    const floor = mkBox(W, 0.15, L, 0x0a0a18, null, 0);
-    floor.position.set(0, -0.075, 0);
-    floor.receiveShadow = true;
-    addR(floor);
+    // Front wall with door hole
+    const DW = 1.7, DH = 3.0;
+    const sw = (W - DW) / 2;
+    const wFL = box(sw, H, 0.15, 0x0d0d22); wFL.position.set(-W/2+sw/2, H/2, -L/2); addR(wFL);
+    const wFR = box(sw, H, 0.15, 0x0d0d22); wFR.position.set( W/2-sw/2, H/2, -L/2); addR(wFR);
+    const wFT = box(DW, H-DH, 0.15, 0x0d0d22); wFT.position.set(0, DH+(H-DH)/2, -L/2); addR(wFT);
 
     // Floor grid
-    const grid = new THREE.GridHelper(L, 30, 0x1a0a3a, 0x0f0820);
-    grid.position.y = 0.01;
-    addR(grid);
+    const g = new THREE.GridHelper(L, 28, 0x1a0a3a, 0x0f0820);
+    g.position.y = 0.01; addR(g);
 
-    // Ceiling
-    const ceil = mkBox(W, 0.15, L, 0x060612, null, 0);
-    ceil.position.set(0, H, 0);
-    addR(ceil);
+    // Ceiling lights
+    [-7,-3.5,0,3.5,7].forEach(z => {
+      const strip = box(0.22, 0.05, 0.9, 0xccccff, 0x9999ff, 2.5);
+      strip.position.set(0, H-0.03, z); addR(strip);
+      light(0x8888ff, 2.5, 10, 0, H-0.1, z);
+    });
 
-    // Left wall
-    const wL = mkBox(0.2, H, L, 0x0e0e22, null, 0);
-    wL.position.set(-W/2, H/2, 0);
-    addR(wL);
-
-    // Right wall
-    const wR = mkBox(0.2, H, L, 0x0e0e22, null, 0);
-    wR.position.set(W/2, H/2, 0);
-    addR(wR);
-
-    // Back wall (player enters from here)
-    const wBack = mkBox(W, H, 0.2, 0x0e0e22, null, 0);
-    wBack.position.set(0, H/2, L/2);
-    addR(wBack);
-
-    // Front wall (with door hole): two side pieces + top piece
-    const doorW = 1.8, doorH = 3.2;
-    const sideW = (W - doorW) / 2;
-    const wFL = mkBox(sideW, H, 0.2, 0x0e0e22, null, 0);
-    wFL.position.set(-W/2 + sideW/2, H/2, -L/2);
-    addR(wFL);
-    const wFR = mkBox(sideW, H, 0.2, 0x0e0e22, null, 0);
-    wFR.position.set(W/2 - sideW/2, H/2, -L/2);
-    addR(wFR);
-    const wFTop = mkBox(doorW, H - doorH, 0.2, 0x0e0e22, null, 0);
-    wFTop.position.set(0, doorH + (H - doorH) / 2, -L/2);
-    addR(wFTop);
-
-    // ── Ceiling lights ─────────────────────
-    for (let z = -7; z <= 7; z += 3.5) {
-      const strip = mkBox(0.25, 0.06, 1.0, 0xccccff, 0x9999ff, 2);
-      strip.position.set(0, H - 0.04, z);
-      addR(strip);
-      const pl = new THREE.PointLight(0x8888ff, 1.8, 9);
-      pl.position.set(0, H - 0.1, z);
-      addR(pl);
-    }
-
-    // ── Wall accent strips ─────────────────
-    for (let z = -6; z <= 6; z += 4) {
-      [W/2 - 0.11, -W/2 + 0.11].forEach(x => {
-        const strip = mkBox(0.05, 1.2, 0.05, 0x7c3aed, 0x7c3aed, 3);
-        strip.position.set(x, 1.2, z);
-        addR(strip);
+    // Purple wall accents
+    [-6,-2,2,6].forEach(z => {
+      [-W/2+0.1, W/2-0.1].forEach(x => {
+        const s = box(0.04, 1.4, 0.04, 0x7c3aed, 0x7c3aed, 4);
+        s.position.set(x, 1.2, z); addR(s);
       });
-    }
+    });
 
-    // ── Door ───────────────────────────────
-    // Frame
-    const fL = mkBox(0.12, doorH, 0.3, 0x1a1a3a, 0x2a1a5a, 0.2);
-    fL.position.set(-doorW/2 - 0.06, doorH/2, -L/2);
-    addR(fL);
-    const fR = mkBox(0.12, doorH, 0.3, 0x1a1a3a, 0x2a1a5a, 0.2);
-    fR.position.set(doorW/2 + 0.06, doorH/2, -L/2);
-    addR(fR);
-    const fT = mkBox(doorW + 0.24, 0.12, 0.3, 0x1a1a3a, 0x2a1a5a, 0.2);
-    fT.position.set(0, doorH + 0.06, -L/2);
-    addR(fT);
+    // Door frame
+    const dfL = box(0.1, DH, 0.25, 0x1a1a3a, 0x3a1a7a, 0.3);
+    dfL.position.set(-DW/2-0.05, DH/2, -L/2); addR(dfL);
+    const dfR = box(0.1, DH, 0.25, 0x1a1a3a, 0x3a1a7a, 0.3);
+    dfR.position.set( DW/2+0.05, DH/2, -L/2); addR(dfR);
+    const dfT = box(DW+0.2, 0.1, 0.25, 0x1a1a3a, 0x3a1a7a, 0.3);
+    dfT.position.set(0, DH+0.05, -L/2); addR(dfT);
 
     // Door sign
-    const sign = mkBox(1.5, 0.25, 0.06, 0x003322, 0x00aa66, 1.2);
-    sign.position.set(0, doorH + 0.35, -L/2 + 0.12);
-    addR(sign);
+    const sgn = box(1.4, 0.22, 0.06, 0x002211, 0x00aa55, 1.5);
+    sgn.position.set(0, DH+0.32, -L/2+0.1); addR(sgn);
 
-    // Door panel (will animate open)
-    const doorPanel = mkBox(doorW, doorH, 0.1, 0x121230, 0x1a1040, 0.1);
-    doorPanel.position.set(0, doorH/2, -L/2 + 0.05);
-    scene.add(doorPanel);
-    roomMeshes.push(doorPanel);
+    // Door panel
+    const door = box(DW, DH, 0.09, 0x121230, 0x18104a, 0.15);
+    door.position.set(0, DH/2, -L/2+0.05);
+    scene.add(door); roomObjects.push(door);
 
-    // Door handle
-    const handle = mkBox(0.06, 0.06, 0.3, 0x6060aa, 0x8888cc, 0.5);
-    handle.position.set(doorW/2 - 0.2, doorH/2, -L/2 + 0.2);
-    scene.add(handle);
-    roomMeshes.push(handle);
+    // Handle
+    const handle = box(0.06, 0.06, 0.28, 0x5050aa, 0x8888cc, 0.6);
+    handle.position.set(DW/2-0.18, DH/2, -L/2+0.18);
+    scene.add(handle); roomObjects.push(handle);
 
-    // Door glow light (turns on when open)
-    const doorLight = new THREE.PointLight(0x0044ff, 0, 8);
-    doorLight.position.set(0, 2, -L/2 - 1);
-    scene.add(doorLight);
-    roomMeshes.push(doorLight);
+    // Door glow
+    const dgl = new THREE.PointLight(0x0033ff, 0, 8);
+    dgl.position.set(0, DH/2, -L/2-0.5); scene.add(dgl); roomObjects.push(dgl);
 
     // Door open animation
-    let doorOpened = false;
+    let opened = false;
     function openDoor() {
-      if (doorOpened) return;
-      doorOpened = true;
-      let progress = 0;
+      if (opened) return;
+      opened = true;
       const pivot = new THREE.Group();
-      pivot.position.set(-doorW/2, doorH/2, -L/2);
-      doorPanel.position.set(doorW/2, 0, 0);
-      handle.position.set(doorW/2 - 0.2, 0, 0.15);
-      pivot.add(doorPanel);
-      pivot.add(handle);
-      scene.add(pivot);
-      roomMeshes.push(pivot);
-
+      pivot.position.set(-DW/2, DH/2, -L/2);
+      door.position.set(DW/2, 0, 0);
+      handle.position.set(DW/2-0.18, 0, 0.13);
+      pivot.add(door); pivot.add(handle);
+      scene.add(pivot); roomObjects.push(pivot);
+      let p = 0;
       animFns.push((t, dt) => {
-        if (progress < 1) {
-          progress = Math.min(1, progress + dt * 1.1);
-          pivot.rotation.y = progress * Math.PI * 0.78;
-          doorLight.intensity = progress * 2.5;
-        } else if (doorCallback) {
-          const cb = doorCallback;
-          onDoorCb = null;
-          doorCallback = null;
-          cb();
+        if (p < 1) {
+          p = Math.min(1, p + dt * 1.0);
+          pivot.rotation.y = p * Math.PI * 0.78;
+          dgl.intensity = p * 3;
+          if (p >= 1 && doorCb) { const cb = doorCb; doorCb = null; setTimeout(cb, 300); }
         }
       });
     }
 
-    // Register door interactable
-    const doorWorldPos = new THREE.Vector3(0, 1.5, -L/2 + 1);
     interactables.push({
-      worldPos: doorWorldPos,
-      itype: 'door',
-      iid: 'door',
+      pos: new THREE.Vector3(0, EYE_H, -L/2+1),
+      itype: 'door', iid: 'door',
       label: 'Buka Pintu Server Room',
       doorFn: openDoor
     });
 
-    // ── NPCs in corridor ──────────────────
-    const lobbyDef = levelData.scenes.lobby;
-    if (lobbyDef.chars) {
-      const npcColors = [0x2563eb, 0x7c3aed, 0x059669, 0xdc2626];
-      lobbyDef.chars.forEach((ch, i) => {
-        const npc = makeNPC(-1.5, 3 - i * 1.5, npcColors[i % npcColors.length], ch.name);
-        npc.rotation.y = -0.4;
+    // NPCs
+    const lobby = levelData.scenes.lobby;
+    if (lobby.chars) {
+      const npcCols = [0x2563eb, 0x7c3aed, 0x059669];
+      lobby.chars.forEach((ch, i) => {
+        const npc = makeNPC(-1.5 + i*1.5, 0, 4-i, npcCols[i%3]);
+        npc.rotation.y = 0.5;
         interactables.push({
-          worldPos: new THREE.Vector3(-1.5, 0, 3 - i * 1.5),
-          itype: 'char',
-          iid: ch.id,
+          pos: new THREE.Vector3(-1.5+i*1.5, EYE_H, 4-i),
+          itype: 'char', iid: ch.id,
           label: 'Bicara dengan ' + ch.name
         });
       });
     }
 
-    showLocLabel(lobbyDef.label || 'Lobby');
+    showLoc(lobby.label || 'Lobby');
   }
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   // SERVER ROOM
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   function loadServerRoom(levelData) {
     clearRoom();
+    const W = 12, H = 4, L = 24;
+    currentRoom = { bounds: { x0:-W/2, x1:W/2, z0:-L/2, z1:L/2 } };
 
-    const W = 13, H = 4.5, L = 22;
-    currentRoom = { type:'serverroom', bounds:{ x0:-W/2, x1:W/2, z0:-L/2, z1:L/2 } };
+    camera.position.set(0, EYE_H, 8);
+    yaw = Math.PI; pitch = 0;
 
-    makePlayer();
-    player.pos.set(0, 0, 7);
-    player.rot = Math.PI;
-    camH = Math.PI;
-    positionCameraImmediate();
+    // Surfaces
+    const fl = box(W, 0.1, L, 0x08080f); fl.position.set(0,-0.05,0); addR(fl);
+    const ce = box(W, 0.1, L, 0x060610); ce.position.set(0, H, 0);   addR(ce);
+    [-W/2, W/2].forEach(x => { const w=box(0.15,H,L,0x0a0a1e); w.position.set(x,H/2,0); addR(w); });
+    [-L/2, L/2].forEach(z => { const w=box(W,H,0.15,0x0a0a1e); w.position.set(0,H/2,z); addR(w); });
 
-    // ── Surfaces ──────────────────────────
-    const floor = mkBox(W, 0.15, L, 0x080814, null, 0);
-    floor.position.set(0, -0.075, 0);
-    floor.receiveShadow = true;
-    addR(floor);
+    // Grid
+    const g = new THREE.GridHelper(L, 25, 0x100830, 0x080520);
+    g.position.y = 0.01; addR(g);
 
-    const grid = new THREE.GridHelper(L, 25, 0x100830, 0x080520);
-    grid.position.y = 0.01;
-    addR(grid);
-
-    const ceil = mkBox(W, 0.15, L, 0x060610, null, 0);
-    ceil.position.set(0, H, 0);
-    addR(ceil);
-
-    [-W/2, W/2].forEach(x => {
-      const wall = mkBox(0.2, H, L, 0x0a0a1e, null, 0);
-      wall.position.set(x, H/2, 0);
-      addR(wall);
-    });
-    [L/2, -L/2].forEach(z => {
-      const wall = mkBox(W, H, 0.2, 0x0a0a1e, null, 0);
-      wall.position.set(0, H/2, z);
-      addR(wall);
-    });
-
-    // ── Ceiling lights ─────────────────────
-    for (let z = -7; z <= 7; z += 3.5) {
-      [-2.5, 2.5].forEach(x => {
-        const strip = mkBox(0.2, 0.05, 1.2, 0xaaaaff, 0x8888ff, 1.8);
-        strip.position.set(x, H - 0.04, z);
-        addR(strip);
+    // Ceiling lights
+    [-7,-3.5,0,3.5,7].forEach(z => {
+      [-2.5,2.5].forEach(x => {
+        const s = box(0.18,0.04,1.1,0xaaaaff,0x8888ff,2); s.position.set(x,H-0.03,z); addR(s);
       });
-      const pl = new THREE.PointLight(0x6666ff, 1.4, 11);
-      pl.position.set(0, H - 0.1, z);
-      addR(pl);
+      light(0x5555ff, 1.8, 12, 0, H-0.1, z);
+    });
+
+    // Server racks
+    for (let z = -8; z <= 8; z += 3) {
+      buildRack(-W/2+1.4, z);
+      buildRack( W/2-1.4, z);
     }
 
-    // ── Server racks ───────────────────────
-    for (let z = -7; z <= 7; z += 2.8) {
-      buildRack(-W/2 + 1.5, z);
-      buildRack( W/2 - 1.5, z);
-    }
+    // Blue ambient
+    addR(new THREE.AmbientLight(0x000833, 1.5));
 
-    // ── Interactive objects ────────────────
+    // Interactive objects
     const srDef = levelData.scenes.serverroom;
     const items = levelData.items;
-    const objPositions = [
-      {x:-1.5, z: 1}, {x: 1.5, z: 1},
-      {x: 0,   z:-1}, {x:-2.5, z:-3},
-      {x: 2.5, z:-3}, {x: 0,   z: 4}
+    const positions = [
+      [-1.5,2],[1.5,2],[0,-1],[-2.5,-3],[2.5,-3],[0,4]
     ];
-
     if (srDef.objects && items) {
       srDef.objects.forEach((obj, i) => {
-        const pos = objPositions[i] || {x:(i%3-1)*2.5, z:i-3};
-        buildInteractive(obj, pos.x, pos.z, items[obj.id]);
+        const [x, z] = positions[i] || [0, i-2];
+        buildItem(obj, x, z, items[obj.id]);
       });
     }
 
-    // ── Room NPCs ─────────────────────────
+    // Room NPCs
     if (srDef.chars) {
       srDef.chars.forEach((ch, i) => {
-        const npc = makeNPC(3, -1 + i * 2, 0x7c3aed, ch.name);
-        npc.rotation.y = -Math.PI / 2;
+        const npc = makeNPC(3.5, 0, i*2-1, 0x7c3aed);
+        npc.rotation.y = -Math.PI/2;
         interactables.push({
-          worldPos: new THREE.Vector3(3, 0, -1 + i * 2),
-          itype: 'char',
-          iid: ch.id,
+          pos: new THREE.Vector3(3.5, EYE_H, i*2-1),
+          itype: 'char', iid: ch.id,
           label: 'Bicara dengan ' + ch.name
         });
       });
     }
 
-    // Blue ambient tint for server room
-    const blueAmb = new THREE.AmbientLight(0x000833, 1.2);
-    addR(blueAmb);
-
-    showLocLabel(srDef.label || 'Server Room');
+    showLoc(srDef.label || 'Server Room');
   }
 
-  // ── Server rack builder ────────────────
+  // ══════════════════════════════════════════
+  // SERVER RACK
+  // ══════════════════════════════════════════
   function buildRack(x, z) {
     const g = new THREE.Group();
     g.position.set(x, 0, z);
-
-    // Rack body
-    const body = mkBox(1.8, 3.6, 1.0, 0x0d0d20, 0x0a0a1a, 0.05);
-    body.position.y = 1.8;
-    g.add(body);
-
-    // Unit slots with LEDs
-    const ledColors = [0x00ff41, 0x06b6d4, 0x00ff41, 0x06b6d4, 0x10b981, 0x00ff41, 0x06b6d4, 0x00ff41];
+    const body = box(1.7, 3.5, 0.95, 0x0d0d20); body.position.y = 1.75; g.add(body);
+    const ledCols = [0x00ff41, 0x06b6d4, 0x00ff41, 0x06b6d4, 0x10b981, 0x00ff41, 0x06b6d4, 0x00ff41];
     for (let i = 0; i < 8; i++) {
-      const unit = mkBox(1.6, 0.35, 0.85, 0x111128, null, 0);
-      unit.position.set(0, 0.3 + i * 0.42, 0);
-      g.add(unit);
-
-      const led = mkBox(0.07, 0.07, 0.07, ledColors[i], ledColors[i], 3);
-      led.position.set(-0.72, 0.3 + i * 0.42, 0.46);
-      g.add(led);
-
-      const spd = 0.4 + Math.random() * 2.5;
-      const off = Math.random() * Math.PI * 2;
-      animFns.push(t => {
-        led.material.emissiveIntensity = 1.5 + Math.sin(t * spd + off) * 1.5;
-      });
+      const unit = box(1.55, 0.32, 0.88, 0x111128); unit.position.set(0, 0.3+i*0.41, 0); g.add(unit);
+      const led  = box(0.07,0.07,0.07, ledCols[i], ledCols[i], 3);
+      led.position.set(-0.7, 0.3+i*0.41, 0.46); g.add(led);
+      const spd = 0.5+Math.random()*2.5, off = Math.random()*Math.PI*2;
+      animFns.push(t => { led.material.emissiveIntensity = 1.5+Math.sin(t*spd+off)*1.5; });
     }
-
     addR(g);
   }
 
-  // ── Interactive object builder ─────────
-  function buildInteractive(obj, x, z, itemData) {
-    const palette = [0x7c3aed, 0x06b6d4, 0x10b981, 0xa855f7, 0xf59e0b, 0xef4444];
-    const col = palette[Object.keys(itemData || {}).length % palette.length]
-      || palette[Math.floor(Math.random() * palette.length)];
-
-    const g = new THREE.Group();
-    g.position.set(x, 0, z);
-
-    // Pedestal
-    const ped = mkBox(0.6, 0.9, 0.6, 0x111125, null, 0);
-    ped.position.y = 0.45;
-    g.add(ped);
-
-    // Object box (glowing)
-    const obox = mkBox(0.65, 0.65, 0.65, col, col, 1.2);
-    obox.position.y = 1.22;
-    g.add(obox);
-
-    // Glow light
-    const gl = new THREE.PointLight(col, 1.8, 3.5);
-    gl.position.set(x, 1.4, z);
-    addR(gl);
-
-    // Pulse animation
-    animFns.push(t => {
-      const s = 1 + Math.sin(t * 2.2) * 0.07;
-      obox.scale.setScalar(s);
-      gl.intensity = 1.2 + Math.sin(t * 2.2) * 0.8;
-    });
-
+  // ══════════════════════════════════════════
+  // INTERACTIVE ITEM
+  // ══════════════════════════════════════════
+  function buildItem(obj, x, z, itemData) {
+    const cols = [0x7c3aed,0x06b6d4,0x10b981,0xa855f7,0xf59e0b,0xef4444];
+    const col  = cols[Object.keys(itemData||{}).length % cols.length] || cols[0];
+    const g    = new THREE.Group(); g.position.set(x, 0, z);
+    const ped  = box(0.55, 0.8, 0.55, 0x111125); ped.position.y = 0.4; g.add(ped);
+    const ob   = box(0.6, 0.6, 0.6, col, col, 1.2); ob.position.y = 1.1; g.add(ob);
+    const gl   = new THREE.PointLight(col, 2, 3.5); gl.position.set(x, 1.3, z); addR(gl);
+    animFns.push(t => { const s=1+Math.sin(t*2.2)*0.07; ob.scale.setScalar(s); gl.intensity=1.2+Math.sin(t*2.2)*0.9; });
     addR(g);
-
     interactables.push({
-      worldPos: new THREE.Vector3(x, 0, z),
-      itype: 'item',
-      iid:   obj.id,
+      pos: new THREE.Vector3(x, EYE_H, z),
+      itype: 'item', iid: obj.id,
       label: itemData ? itemData.title : obj.label
     });
   }
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
+  // NPC (visible character in world)
+  // ══════════════════════════════════════════
+  function makeNPC(x, y, z, col) {
+    const g = new THREE.Group(); g.position.set(x, y, z);
+    const mk = (w,h,d,c,ec,ei) => { const m=box(w,h,d,c,ec,ei); g.add(m); return m; };
+    mk(0.5,0.65,0.3,col,col,0.15).position.y=1.1;   // torso
+    mk(0.46,0.46,0.46,0xffcc99).position.y=1.65;      // head
+    mk(0.09,0.09,0.06,0x333366,0x4466ff,0.7).position.set(-0.12,1.67,0.23); // eye L
+    mk(0.09,0.09,0.06,0x333366,0x4466ff,0.7).position.set( 0.12,1.67,0.23); // eye R
+    mk(0.22,0.58,0.27,col).position.set(-0.38,1.05,0); // arm L
+    mk(0.22,0.58,0.27,col).position.set( 0.38,1.05,0); // arm R
+    mk(0.23,0.62,0.28,0x1e3a5f).position.set(-0.15,0.3,0); // leg L
+    mk(0.23,0.62,0.28,0x1a3355).position.set( 0.15,0.3,0); // leg R
+    const off = Math.random()*Math.PI*2;
+    animFns.push(t => { g.position.y = y + Math.sin(t*1.8+off)*0.04; });
+    addR(g); return g;
+  }
+
+  // ══════════════════════════════════════════
   // LOC LABEL
-  // ─────────────────────────────────────────
-  function showLocLabel(text) {
+  // ══════════════════════════════════════════
+  function showLoc(text) {
     const el = document.getElementById('loc-label');
     if (!el || !text) return;
     el.textContent = text;
@@ -704,26 +458,35 @@ const World = (() => {
     setTimeout(() => el.classList.add('hidden'), 3100);
   }
 
-  // ─────────────────────────────────────────
-  // FADE + LOAD ROOM
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
+  // PUBLIC
+  // ══════════════════════════════════════════
   function loadRoom(roomId, levelData, doorCb) {
-    const overlay = document.getElementById('fade-overlay');
-    overlay.style.opacity = 1;
+    const ov = document.getElementById('fade-overlay');
+    ov.style.opacity = 1;
     setTimeout(() => {
       if (roomId === 'lobby') loadCorridor(levelData, doorCb);
-      else                    loadServerRoom(levelData);
-      setTimeout(() => { overlay.style.opacity = 0; }, 80);
-    }, 550);
+      else loadServerRoom(levelData);
+      setTimeout(() => { ov.style.opacity = 0; }, 80);
+    }, 500);
   }
 
   function markItemFound(id) {
-    // Remove interactable so prompt stops showing
-    interactables = interactables.filter(i => !(i.itype === 'item' && i.iid === id));
+    interactables = interactables.filter(o => !(o.itype==='item' && o.iid===id));
   }
 
-  function releasePointer() { document.exitPointerLock(); }
+  function releasePointer() {
+    document.exitPointerLock();
+    // Show click-to-start so user can re-enter after dialog closes
+    setTimeout(refreshOverlay, 100);
+  }
 
-  return { init, loadRoom, markItemFound, releasePointer, showLocLabel };
+  function refreshOverlay() {
+    const el = document.getElementById('click-to-start');
+    if (!el) return;
+    el.style.display = (!pointerLocked && gameActive() && !isUIOpen()) ? 'flex' : 'none';
+  }
+
+  return { init, loadRoom, markItemFound, releasePointer, showLoc };
 
 })();
