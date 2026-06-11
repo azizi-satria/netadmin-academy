@@ -20,6 +20,8 @@
     #crosshair::after{height:2px;width:100%;top:50%;transform:translateY(-50%)}
     #interact-prompt{position:fixed;bottom:36%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid rgba(124,58,237,.6);color:#a855f7;padding:5px 18px;border-radius:20px;font-size:.82rem;font-weight:700;display:none;z-index:20}
     #hud,#dialog-box,#inspect-box,#term-overlay,#obj-panel,#loc-label,#notif,#lvl-complete,#loading-screen,#main-menu,#howto-screen,#credits-screen{z-index:80;position:fixed}
+    .btn-continue{background:linear-gradient(135deg,#059669,#0891b2);border:none;color:#fff;padding:.8rem 2rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:.25rem;box-shadow:0 4px 20px rgba(5,150,105,.4)}
+    .btn-continue:hover{opacity:.9}
   </style>
 </head>
 <body>
@@ -62,7 +64,8 @@
     <h1 class="mm-title">NetAdmin<span>Academy</span></h1>
     <p class="mm-desc">Jelajahi Netville · Masuki server room · Selesaikan misi jaringan</p>
     <div class="mm-btns">
-      <button class="btn-main" onclick="startGame()">▶ Mulai Petualangan</button>
+      <button class="btn-continue hidden" id="continue-btn" onclick="continueSave()" style="display:none">⏯ Lanjutkan Game</button>
+      <button class="btn-main" onclick="showNameInput()">▶ Mulai Baru</button>
       <button class="btn-sub"  onclick="showHowTo()">📖 Cara Bermain</button>
       <button class="btn-sub"  onclick="showCredits()">ℹ️ Tentang</button>
     </div>
@@ -169,6 +172,24 @@
   <div id="notif" class="hidden"></div>
 </div>
 
+<div id="pause-screen" class="hidden" style="position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:rgba(5,5,14,.88);backdrop-filter:blur(8px)">
+  <div style="background:linear-gradient(135deg,#0d0d2a,#1a1040);border:1px solid rgba(124,58,237,.5);border-radius:20px;padding:2.5rem 3rem;min-width:300px;text-align:center;box-shadow:0 0 60px rgba(124,58,237,.3)">
+    <div style="font-size:2.5rem;margin-bottom:.5rem">⏸</div>
+    <h2 style="color:#e0d0ff;margin:0 0 .3rem;font-size:1.5rem">Game Dijeda</h2>
+    <p style="color:#888;font-size:.8rem;margin:0 0 1.2rem">Tekan ESC lagi atau klik Lanjutkan</p>
+    <div style="display:flex;gap:1rem;justify-content:center;margin-bottom:1.4rem">
+      <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#aaa;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700">ESC = Lanjut</span>
+      <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#aaa;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700">S = Simpan</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem">
+      <button onclick="resumeGame()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;padding:.75rem 1.5rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">▶ Lanjutkan  <span style="opacity:.6;font-size:.75rem">[ESC]</span></button>
+      <button onclick="saveGame()" style="background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.5);color:#c4b5fd;padding:.65rem 1.5rem;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer">💾 Simpan Progress  <span style="opacity:.6;font-size:.75rem">[S]</span></button>
+      <button onclick="exitToMenu()" style="background:rgba(255,50,50,.1);border:1px solid rgba(255,80,80,.35);color:#f87171;padding:.65rem 1.5rem;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer">🚪 Keluar ke Menu Utama</button>
+    </div>
+    <p style="color:#555;font-size:.72rem;margin-top:1.2rem">Progress tidak tersimpan otomatis — simpan dulu sebelum keluar!</p>
+  </div>
+</div>
+
 <div id="lvl-complete" class="hidden">
   <div class="lc-card">
     <div class="lc-burst" id="lc-burst">🏆</div>
@@ -182,6 +203,144 @@
     <button class="btn-main" onclick="nextLevel()">Level Berikutnya ▶</button>
   </div>
 </div>
+
+<div id="name-screen" class="hidden overlay-screen" style="z-index:90">
+  <div class="name-card">
+    <div class="name-avatar" id="name-avatar">😊</div>
+    <h2>Perkenalkan Dirimu!</h2>
+    <p class="name-sub">Isi data diri kamu sebelum mulai PKL di Kota Netville.</p>
+
+    <div class="name-fields">
+      <div class="name-field-group">
+        <label class="name-label">👤 Nama Kamu</label>
+        <input id="player-name-input" type="text" maxlength="25" placeholder="Contoh: Budi Santoso"
+          class="name-input-field"
+          oninput="onNameType()" onkeydown="if(event.key==='Enter')document.getElementById('player-school-input').focus()"/>
+      </div>
+      <div class="name-field-group">
+        <label class="name-label">🏫 Nama SMK Kamu</label>
+        <input id="player-school-input" type="text" maxlength="40" placeholder="Contoh: SMKN 1 Curup"
+          class="name-input-field"
+          oninput="onNameType()" onkeydown="if(event.key==='Enter')confirmName()"/>
+      </div>
+    </div>
+
+    <div class="name-preview hidden" id="name-preview">
+      <div class="name-id-card">
+        <div class="nic-stripe"></div>
+        <div class="nic-body">
+          <div class="nic-top-row">
+            <div class="nic-logo">⚡</div>
+            <div>
+              <div class="nic-school-name" id="nic-school">SMK TKJ</div>
+              <div class="nic-label">KARTU SISWA PKL</div>
+            </div>
+          </div>
+          <div class="nic-divider"></div>
+          <div class="nic-name" id="nic-name">—</div>
+          <div class="nic-role">Siswa Praktik Kerja Lapangan</div>
+          <div class="nic-jurusan">Jurusan: Teknik Komputer & Jaringan</div>
+          <div class="nic-year">T.A. 2024 / 2025</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-main" id="name-confirm-btn" onclick="confirmName()" disabled style="margin-top:1rem;opacity:.4">
+      Lanjut — Pilih Lokasi Magang ▶
+    </button>
+    <button class="btn-sub" onclick="hideNameInput()" style="margin-top:.4rem">← Kembali</button>
+  </div>
+</div>
+
+<style>
+.name-card{background:rgba(8,8,24,.97);border:1px solid rgba(124,58,237,.35);border-radius:20px;padding:2rem 1.8rem;max-width:500px;width:95%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.55rem}
+.name-avatar{font-size:3.5rem;transition:transform .3s}
+.name-card h2{font-size:1.4rem;font-weight:800;color:#fff;margin:0}
+.name-sub{color:#888;font-size:.82rem;line-height:1.55;margin:0}
+.name-fields{width:100%;display:flex;flex-direction:column;gap:.6rem;margin:.2rem 0}
+.name-field-group{text-align:left}
+.name-label{display:block;font-size:.72rem;font-weight:700;color:#a855f7;margin-bottom:.3rem;letter-spacing:.04em}
+.name-input-field{width:100%;background:rgba(124,58,237,.1);border:2px solid rgba(124,58,237,.35);border-radius:10px;color:#fff;font-size:1rem;font-weight:600;padding:.6rem .9rem;outline:none;font-family:inherit;transition:border-color .2s,box-shadow .2s;box-sizing:border-box}
+.name-input-field:focus{border-color:#a855f7;box-shadow:0 0 14px rgba(168,85,247,.22)}
+.name-input-field::placeholder{color:rgba(255,255,255,.22);font-weight:400}
+.name-preview{margin-top:.4rem;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.name-id-card{background:linear-gradient(135deg,#150828,#071528);border:1.5px solid rgba(124,58,237,.55);border-radius:14px;overflow:hidden;width:280px;box-shadow:0 8px 30px rgba(124,58,237,.28)}
+.nic-stripe{height:7px;background:linear-gradient(90deg,#7c3aed,#06b6d4,#10b981,#06b6d4,#7c3aed)}
+.nic-body{padding:.9rem 1.1rem .8rem;text-align:left}
+.nic-top-row{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.5rem}
+.nic-logo{font-size:1.8rem;line-height:1}
+.nic-school-name{font-size:.72rem;font-weight:800;color:#a855f7;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.nic-label{font-size:.58rem;color:#555;letter-spacing:.06em;text-transform:uppercase}
+.nic-divider{height:1px;background:rgba(124,58,237,.2);margin:.4rem 0}
+.nic-name{font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:.2rem;min-height:1.3rem;letter-spacing:.01em}
+.nic-role{font-size:.63rem;color:#06b6d4;font-weight:600}
+.nic-jurusan{font-size:.6rem;color:#888;margin-top:.1rem}
+.nic-year{font-size:.58rem;color:#444;margin-top:.4rem}
+#name-confirm-btn{transition:opacity .25s}
+</style>
+
+<div id="location-screen" class="hidden overlay-screen" style="z-index:90">
+  <div class="loc-card">
+    <div class="loc-header">
+      <div class="loc-emoji">🎓</div>
+      <h2>Pilih Tempat Magang</h2>
+      <p>Kamu adalah <strong>Andi</strong>, siswa SMK TKJ yang siap PKL.<br>Di mana kamu akan mengabdi dan membuktikan diri?</p>
+    </div>
+    <div class="loc-grid" id="loc-grid">
+      <div class="loc-option" onclick="selectLocation('gov')">
+        <div class="loc-ico">🏛️</div>
+        <div class="loc-name">Dinas Pemerintahan</div>
+        <div class="loc-sub">Kota Netville</div>
+        <div class="loc-desc">Kelola infrastruktur IT kota — dari e-government sampai CCTV kota. Bertemu langsung dengan Wali Kota!</div>
+        <div class="loc-tags"><span>Apache</span><span>Linux</span><span>Firewall</span></div>
+      </div>
+      <div class="loc-option" onclick="selectLocation('campus')">
+        <div class="loc-ico">🏫</div>
+        <div class="loc-name">Kampus Teknik</div>
+        <div class="loc-sub">Universitas Netville</div>
+        <div class="loc-desc">Handle server lab komputer, portal akademik, dan jaringan Wi-Fi kampus untuk ribuan mahasiswa.</div>
+        <div class="loc-tags"><span>DHCP</span><span>DNS</span><span>MySQL</span></div>
+      </div>
+      <div class="loc-option" onclick="selectLocation('corp')">
+        <div class="loc-ico">🏢</div>
+        <div class="loc-name">Perusahaan Swasta</div>
+        <div class="loc-sub">PT Netville Teknologi</div>
+        <div class="loc-desc">Sysadmin di startup IT berkembang pesat — server cloud, CI/CD pipeline, dan keamanan data klien.</div>
+        <div class="loc-tags"><span>SSH</span><span>Security</span><span>Monitoring</span></div>
+      </div>
+      <div class="loc-option" onclick="selectLocation('isp')">
+        <div class="loc-ico">📡</div>
+        <div class="loc-name">ISP / Provider</div>
+        <div class="loc-sub">Netville Fiber Indonesia</div>
+        <div class="loc-desc">Jaga kestabilan jaringan internet untuk seluruh kota — routing, bandwidth management, dan NOC 24 jam.</div>
+        <div class="loc-tags"><span>Networking</span><span>BGP</span><span>NOC</span></div>
+      </div>
+    </div>
+    <button class="btn-sub" onclick="hideLocationSelect()" style="margin-top:1rem">← Kembali</button>
+  </div>
+</div>
+
+<style>
+.loc-card{background:rgba(10,10,30,.97);border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:2rem;max-width:860px;width:95%;max-height:90vh;overflow-y:auto}
+.loc-header{text-align:center;margin-bottom:1.5rem}
+.loc-header .loc-emoji{font-size:3rem;margin-bottom:.5rem}
+.loc-header h2{font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:.4rem}
+.loc-header p{color:#aaa;font-size:.88rem;line-height:1.6}
+.loc-header strong{color:#a855f7}
+.loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.loc-grid{grid-template-columns:1fr}}
+.loc-option{background:rgba(124,58,237,.07);border:1.5px solid rgba(124,58,237,.25);border-radius:14px;padding:1.2rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.loc-option:hover{background:rgba(124,58,237,.18);border-color:rgba(124,58,237,.7);transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.25)}
+.loc-ico{font-size:2.4rem;margin-bottom:.5rem}
+.loc-name{font-size:1rem;font-weight:700;color:#fff;margin-bottom:.1rem}
+.loc-sub{font-size:.75rem;color:#7c3aed;font-weight:600;margin-bottom:.55rem}
+.loc-desc{font-size:.78rem;color:#9999bb;line-height:1.55;margin-bottom:.7rem}
+.loc-tags{display:flex;flex-wrap:wrap;gap:.3rem}
+.loc-tags span{background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.3);color:#06b6d4;font-size:.68rem;padding:2px 8px;border-radius:20px;font-weight:600}
+.loc-option.selected{border-color:#a855f7;background:rgba(168,85,247,.18);box-shadow:0 0 20px rgba(168,85,247,.35)}
+.loc-option:active{transform:scale(.98)}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>

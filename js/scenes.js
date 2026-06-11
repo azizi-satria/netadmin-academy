@@ -1,31 +1,29 @@
 // ════════════════════════════════════════════
-// LEVEL & SCENE DATA — NetAdmin Academy v5
-// Cerita: Andi, Siswa SMK TKJ yang magang di
-// Dinas IT Kota Netville — dan jadi pahlawan!
+// LEVEL & SCENE DATA — NetAdmin Academy v6
+// Cerita: Andi, Siswa SMK TKJ yang magang —
+// dari kikuk hari pertama sampai jadi pahlawan!
 // ════════════════════════════════════════════
 
 const LEVELS = [
 
   // ══════════════════════════════════════════
-  // LEVEL 1 — Hari Pertama Magang, Langsung Krisis!
+  // LEVEL 1 — Hari Pertama Magang
   // ══════════════════════════════════════════
   {
     id: 1,
     title: "Hari Pertama Magang",
-    mission: "Server web sekolah down — ujian online terancam!",
+    mission: "Selesaikan orientasi & tangani krisis server pertamamu",
     badge: "🔧 Magang Heroik",
     startScene: "lobby",
 
     scenes: {
       lobby: {
         type: "corridor",
-        label: "🏢 Dinas IT Kota Netville — Lantai 3",
+        label: "🏢 Lantai 3 — Ruang Tunggu IT",
         doorSign: "SERVER ROOM A",
         chars: [
-          { id: "pak-heri", name: "Pak Heri" },
-          { id: "kak-sari", name: "Kak Sari" }
-        ],
-        dialogOnEnter: "intro"
+          { id: "pak-heri", name: "Pak Heri" }
+        ]
       },
       serverroom: {
         type: "serverroom",
@@ -33,37 +31,38 @@ const LEVELS = [
         chars: [
           { id: "kak-sari", name: "Kak Sari" }
         ],
-        dialogOnEnter: "enter_sr",
         objects: [
-          { id: "server-rack",   label: "Server Rack" },
-          { id: "monitor",       label: "Monitor Terminal" },
+          { id: "server-rack",   label: "Server Rack Utama" },
+          { id: "monitor",       label: "Monitor Error Log" },
           { id: "sticky-note",   label: "Catatan Pak Heri" },
           { id: "router",        label: "Router Jaringan" },
-          { id: "usb-log",       label: "USB Log Error" }
+          { id: "usb-log",       label: "USB Backup Log" }
         ]
       }
     },
 
     dialogs: {
-      intro: [
-        { avatar: "😅", name: "Andi (Kamu)", text: "Bismillah... hari pertama magang di Dinas IT Kota Netville. Semoga tidak ada yang aneh-aneh hari ini..." },
-        { avatar: "😱", name: "Pak Heri", text: "ANDI! Kamu sudah datang! Syukurlah! Ada KRISIS besar! Server web SMKN 1 Netville DOWN dari tadi pagi!" },
-        { avatar: "😱", name: "Pak Heri", text: "Ujian online semester genap mulai 2 jam lagi! 800 siswa tidak bisa akses platform ujian! Wali Kota sudah telepon 3 kali!!" },
-        { avatar: "😎", name: "Kak Sari", text: "Santai Pak Heri. Andi, aku Sari — senior sysadmin di sini. Sudah aku diagnosa: SSH server aktif tapi web service Apache-nya mati." },
-        { avatar: "😎", name: "Kak Sari", text: "Disk server penuh karena log tidak pernah dibersihkan. Apache tidak bisa jalan. Masuk server room — kita beresin bareng. Santai aja!" },
-        { avatar: "😅", name: "Andi (Kamu)", text: "Hari pertama magang langsung krisis... ini pasti ujian dari guru PKL-ku. Oke, let's go!" }
-      ],
-      enter_sr: [
-        { avatar: "😎", name: "Kak Sari", text: "Nah, ini dia server room-nya. Klik setiap perangkat buat inspect dulu, kumpulin info sebanyak mungkin." },
-        { avatar: "😎", name: "Kak Sari", text: "Setelah paham masalahnya, buka terminal dan ketik command yang benar. Aku yakin kamu bisa!" }
-      ],
       char_pak_heri: [
-        { avatar: "😱", name: "Pak Heri", text: "ANDI! Wali Kota baru telepon lagi! Katanya kalau ujian sampai gagal, dia akan evaluasi anggaran Dinas IT kita!" },
-        { avatar: "😱", name: "Pak Heri", text: "Tolong cepat ya! Aku percaya sama kamu dan Sari!" }
+        { avatar: "😅", name: "Andi (Kamu)", text: "Bismillah... *tarik napas* Ini dia, Dinas IT Kota Netville. Hari pertama magang!" },
+        { avatar: "😊", name: "Pak Heri", text: "Oh! Kamu pasti Andi dari SMK TKJ! Selamat datang! Aku Pak Heri, Kepala Divisi IT kota ini." },
+        { avatar: "😊", name: "Pak Heri", text: "Di divisi kami, tugas kami menjaga seluruh infrastruktur IT kota — website pemerintah, database kependudukan, jaringan semua kantor..." },
+        { avatar: "😊", name: "Pak Heri", text: "Kamu akan belajar banyak selama magang di sini. Oh ya, partnermu sudah menunggu di server room — namanya Kak Sari, senior sysadmin kita yang paling jago!" },
+        { avatar: "😅", name: "Andi (Kamu)", text: "Wah, keren sekali, Pak! Saya siap belajar! Boleh langsung ke server room?" },
+        { avatar: "😊", name: "Pak Heri", text: "Tentu! Pintu server room ada di ujung lorong ini. Kenalan dulu sama Sari — dia yang akan guide kamu selama magang. Selamat bekerja, Andi!" }
       ],
       char_kak_sari: [
-        { avatar: "😎", name: "Kak Sari", text: "Cek dulu sticky note di meja — Pak Heri nulis checklist kasar di sana. Lumayan buat panduan." },
-        { avatar: "😎", name: "Kak Sari", text: "Intinya: bersihkan disk dulu biar Apache bisa jalan, lalu verifikasi website bisa diakses." }
+        { avatar: "😎", name: "Kak Sari", text: "Eh, kamu pasti Andi? Halo! Aku Sari. Selamat datang di server room — ini 'jantungnya' IT kota!" },
+        { avatar: "😎", name: "Kak Sari", text: "*menunjuk ke kiri* Di sisi sana — production servers. Handle web, database, email, semua layanan kota yang jalan 24/7." },
+        { avatar: "😎", name: "Kak Sari", text: "LED yang blink-blink hijau itu tanda server aktif. Kalau ada yang merah atau mati, kita harus respons cepat." },
+        { avatar: "😎", name: "Kak Sari", text: "*menunjuk ke kanan* Sisi ini — server backup dan test environment. Penting banget buat disaster recovery." },
+        { avatar: "😎", name: "Kak Sari", text: "Di tengah ada workstation. Dari sini kita monitor semua server via command line Linux. Kamu familiar sama Linux?" },
+        { avatar: "😅", name: "Andi (Kamu)", text: "Sedikit, Kak... di sekolah baru belajar dasarnya." },
+        { avatar: "😎", name: "Kak Sari", text: "Bagus! Di sini kamu langsung praktek nyata. Oke, sekarang aku tunjukin cara kita kerja—" },
+        { avatar: "📞", name: "[ ☎  TELPON MASUK — PAK HERI ]", text: "BRRINGGG!! BRRINGGG!! BRRINGGG!!" },
+        { avatar: "😱", name: "Pak Heri (via telepon)", text: "SARI!! Server web SMKN 1 DOWN! Ujian online 800 siswa mulai 2 jam lagi! Disk penuh, Apache crash! Wali Kota sudah telepon 3 kali!!" },
+        { avatar: "😎", name: "Kak Sari", text: "*tutup telepon, langsung serius* Oke Andi. Ini situasi NYATA. Kita harus bergerak sekarang." },
+        { avatar: "😎", name: "Kak Sari", text: "Langkah pertama: INSPECT semua perangkat di ruangan ini. Klik setiap item dan baca infonya — kumpulin informasi dulu." },
+        { avatar: "😎", name: "Kak Sari", text: "Setelah paham masalahnya, buka terminal dari tombol 💻 di panel Misi. Aku di sini kalau butuh bantuan. Let's go!" }
       ]
     },
 
@@ -72,20 +71,20 @@ const LEVELS = [
         icon: "🖥️", title: "Server Dell PowerEdge — Apache MATI",
         status: "err", statusText: "Disk 100% — Apache Crash",
         body: "Status server:\n• Ubuntu Server 22.04 ✓\n• CPU: normal\n• RAM: 4GB / 8GB (OK)\n• Disk /: 100% PENUH ❌\n\nApache tidak bisa tulis log → service crash!\nHarus bersihkan disk sebelum restart Apache.",
-        theory: "Disk 100% adalah salah satu penyebab server down yang paling umum. Service seperti Apache membutuhkan ruang untuk menulis log. Jika disk penuh, service crash. Solusi: hapus log lama dengan journalctl --vacuum-size atau hapus file di /var/log/.",
+        theory: "Disk 100% adalah salah satu penyebab server down yang paling umum. Service seperti Apache membutuhkan ruang untuk menulis log. Solusi: hapus log lama dengan journalctl --vacuum-size.",
         triggerTerm: true
       },
       "monitor": {
         icon: "🖥", title: "Monitor — Apache Error Log",
         status: "err", statusText: "Failed to write log",
         body: "Error terakhir di /var/log/apache2/error.log:\n\n[ALERT] No space left on device!\n[ERROR] apache2: could not open error log file\n[ERROR] AH00015: Unable to open logs\n\nKonfirmasi: disk penuh = Apache mati.",
-        theory: "Apache menyimpan log di /var/log/apache2/. Jika disk penuh, Apache tidak bisa tulis log dan langsung crash. Perintah untuk cek: df -h (disk usage) dan du -sh /var/log/* (ukuran tiap folder log).",
+        theory: "Apache menyimpan log di /var/log/apache2/. Jika disk penuh, Apache tidak bisa tulis log dan langsung crash. Cek: df -h (disk usage) dan du -sh /var/log/* (ukuran tiap folder).",
         triggerTerm: true
       },
       "sticky-note": {
         icon: "📝", title: "Catatan Pak Heri — Tempel di Meja",
         status: "ok", statusText: "📋 Petunjuk Darurat",
-        body: "Langkah darurat (tulis tadi malam):\n1. df -h → cek penggunaan disk\n2. du -sh /var/log/* → cari file terbesar\n3. journalctl --vacuum-size=100M → bersihkan log sistem\n4. rm -f /var/log/apache2/*.gz → hapus log Apache lama\n5. systemctl restart apache2\n6. curl http://localhost → test!\n\n— Heri",
+        body: "Langkah darurat:\n1. df -h → cek penggunaan disk\n2. du -sh /var/log/* → cari file terbesar\n3. journalctl --vacuum-size=100M → bersihkan log\n4. systemctl restart apache2\n5. curl http://localhost → test!\n\n— Heri",
         theory: "",
         triggerTerm: false
       },
@@ -93,14 +92,14 @@ const LEVELS = [
         icon: "📡", title: "Router — Jaringan Normal",
         status: "ok", statusText: "Link UP ✓",
         body: "Router berjalan normal:\n• Uptime: 47 hari\n• WAN: terhubung ke internet ✓\n• LAN: 192.168.1.1/24\n• Server IP: 192.168.1.100\n\nJaringan bukan masalahnya — masalah di server!",
-        theory: "Langkah troubleshooting: selalu pisahkan dulu masalah jaringan vs masalah server. Jika ping ke server berhasil tapi website tidak bisa dibuka, berarti masalah di server (service, disk, config), bukan di jaringan.",
+        theory: "Langkah troubleshooting: pisahkan dulu masalah jaringan vs masalah server. Jika ping berhasil tapi website tidak bisa dibuka, berarti masalah di server, bukan di jaringan.",
         triggerTerm: false
       },
       "usb-log": {
-        icon: "💾", title: "USB — Backup Log Error Kemarin",
-        status: "warn", statusText: "Log backup 3 bulan lalu",
-        body: "Isi USB:\n• error_log_backup_jan.tar.gz (4.2 GB!)\n• error_log_backup_feb.tar.gz (3.8 GB)\n• error_log_backup_mar.tar.gz (5.1 GB)\n\nTOTAL: 13 GB log yang belum pernah dibersihkan!\nIni penyebab disk penuh.",
-        theory: "Log server bisa sangat besar jika tidak dikelola. Best practice: konfigurasi logrotate untuk otomatis kompres dan hapus log lama. File konfigurasi: /etc/logrotate.conf",
+        icon: "💾", title: "USB — Backup Log Error",
+        status: "warn", statusText: "Log 3 bulan tidak dibersihkan!",
+        body: "Isi USB:\n• error_log_backup_jan.tar.gz (4.2 GB)\n• error_log_backup_feb.tar.gz (3.8 GB)\n• error_log_backup_mar.tar.gz (5.1 GB)\n\nTOTAL: 13 GB log tidak pernah dibersihkan!\nIni penyebab disk penuh.",
+        theory: "Best practice: konfigurasi logrotate untuk otomatis kompres dan hapus log lama. File konfigurasi: /etc/logrotate.conf",
         triggerTerm: false
       }
     },
@@ -125,21 +124,20 @@ const LEVELS = [
   // ══════════════════════════════════════════
   {
     id: 2,
-    title: "Kantor Lurah Gelap Jaringannya",
-    mission: "Jaringan 30 PC kantor lurah putus mendadak!",
+    title: "Jaringan Mati di Kelurahan",
+    mission: "DHCP error — 30 PC kantor lurah tidak dapat IP address!",
     badge: "🔌 Network Fixer",
     startScene: "lobby",
 
     scenes: {
       lobby: {
         type: "corridor",
-        label: "🏢 Dinas IT — Laporan Masuk Lagi",
+        label: "🏢 Dinas IT — Laporan Darurat Masuk",
         doorSign: "SERVER ROOM B",
         chars: [
-          { id: "pak-heri", name: "Pak Heri" },
+          { id: "pak-heri",  name: "Pak Heri" },
           { id: "pak-lurah", name: "Pak Lurah" }
-        ],
-        dialogOnEnter: "intro"
+        ]
       },
       serverroom: {
         type: "serverroom",
@@ -147,428 +145,418 @@ const LEVELS = [
         chars: [
           { id: "kak-sari", name: "Kak Sari" }
         ],
-        dialogOnEnter: "enter_sr",
         objects: [
-          { id: "switch",      label: "Network Switch" },
-          { id: "dhcp-server", label: "DHCP Server" },
-          { id: "pc-lab",      label: "PC Staf Kantor" },
-          { id: "ip-diagram",  label: "Diagram IP Kantor" },
+          { id: "switch",       label: "Network Switch" },
+          { id: "dhcp-server",  label: "DHCP Server" },
+          { id: "pc-lab",       label: "PC Staf Kantor" },
+          { id: "ip-diagram",   label: "Diagram IP Kantor" },
           { id: "error-ticket", label: "Tiket Trouble" }
         ]
       }
     },
 
     dialogs: {
-      intro: [
+      char_pak_heri: [
         { avatar: "😅", name: "Andi (Kamu)", text: "Hari kedua magang. Semoga lebih tenang dari kemarin... *notifikasi masuk*" },
-        { avatar: "😱", name: "Pak Heri", text: "ANDI! Pak Lurah telepon! Seluruh jaringan kantor kelurahan mati! Semua staf tidak bisa kerja, antrian warga numpuk!" },
-        { avatar: "😤", name: "Pak Lurah", text: "Ini parah sekali! Kami sedang proses administrasi KTP massal — 200 warga sudah ngantri sejak pagi! Harus beres sebelum jam 12!" },
-        { avatar: "😱", name: "Pak Heri", text: "Andi, kamu pergi ke server room kantor kelurahan. Sari sudah di sana duluan. Cepat ya!!" },
-        { avatar: "😅", name: "Andi (Kamu)", text: "Siap, Pak! *dalam hati: dag-dig-dug lagi nih...*" }
-      ],
-      enter_sr: [
-        { avatar: "😎", name: "Kak Sari", text: "Nah, kamu datang juga. Oke, situasinya: semua PC dapat IP 169.254.x.x — itu tanda DHCP server tidak merespons." },
-        { avatar: "😎", name: "Kak Sari", text: "Ada dua kemungkinan: DHCP service mati, atau ada IP conflict. Cek switch dan server dulu, ya. Diagram IP ada di sudut sana." }
+        { avatar: "😱", name: "Pak Heri", text: "Andi! Pak Lurah sudah di sini dari tadi pagi. Ada masalah besar di kantor kelurahan!" },
+        { avatar: "😤", name: "Pak Lurah", text: "Ini sangat mendesak! Seluruh jaringan kantor kelurahan MATI! 200 warga sudah antri buat KTP — staf tidak bisa akses sistem apapun!" },
+        { avatar: "😱", name: "Pak Heri", text: "Sari sudah berangkat duluan ke server room. Andi, pergi sekarang ya! Ini darurat!" },
+        { avatar: "😅", name: "Andi (Kamu)", text: "Siap Pak! Saya langsung ke server room! *dalam hati: dag-dig-dug lagi nih...*" }
       ],
       char_pak_lurah: [
-        { avatar: "😤", name: "Pak Lurah", text: "Bagaimana ini? Warga sudah marah-marah di depan. Sistem e-KTP tidak bisa diakses sama sekali!" },
-        { avatar: "😤", name: "Pak Lurah", text: "Kalau tidak beres sampai jam 12, saya laporkan ke Wali Kota!" }
+        { avatar: "😤", name: "Pak Lurah", text: "Hei, kamu yang magang itu ya? Tolong cepat! Antrian warga sudah sangat panjang!" },
+        { avatar: "😤", name: "Pak Lurah", text: "Kami tidak bisa proses KTP, surat keterangan, apa pun! Semua PC tidak bisa konek jaringan!" }
       ],
       char_kak_sari: [
-        { avatar: "😎", name: "Kak Sari", text: "Lihat tiket trouble di meja — ada history-nya. Sepertinya kemarin ada yang iseng ganti IP statis di salah satu PC dan bentrok sama range DHCP." },
-        { avatar: "😎", name: "Kak Sari", text: "Solusinya: restart DHCP server, dan kalau perlu perbaiki konfigurasi range IP-nya." }
+        { avatar: "😎", name: "Kak Sari", text: "Andi! Bagus, kamu sudah datang. Aku sudah survey sebentar — masalahnya jelas: DHCP server error." },
+        { avatar: "😎", name: "Kak Sari", text: "*tunjuk server* DHCP server ini yang kasih IP address ke semua PC di kantor. Kalau dia mati, semua PC tidak dapat IP — otomatis tidak bisa akses jaringan." },
+        { avatar: "😎", name: "Kak Sari", text: "Coba lihat konfigurasinya — sepertinya ada typo atau syntax error di file dhcpd.conf yang buat service tidak bisa start." },
+        { avatar: "😎", name: "Kak Sari", text: "Tugasmu: cek status DHCP, buka dan perbaiki file konfigurasinya, restart, dan pastikan PC sudah dapat IP lagi." },
+        { avatar: "😎", name: "Kak Sari", text: "Inspect semua item dulu untuk paham situasinya, lalu buka terminal. Aku stand by di sini!" }
       ]
     },
 
     items: {
       "switch": {
-        icon: "🔀", title: "Switch 24-Port — Aktif tapi Aneh",
-        status: "warn", statusText: "IP Conflict terdeteksi",
-        body: "Switch log terakhir:\n⚠ IP Conflict: 192.168.2.50\n  → PC-Staf-03 vs DHCP Pool\n\nSemua port hijau (koneksi fisik OK).\nMasalah bukan kabel — ada konflik IP di jaringan!\n\nDHCP server perlu di-restart dan config dicek.",
-        theory: "IP Conflict terjadi ketika dua perangkat menggunakan IP yang sama. Switch modern bisa mendeteksi ini. Solusinya: pastikan IP statis di luar range DHCP, atau pindahkan perangkat yang konflik ke IP lain.",
+        icon: "🔀", title: "Network Switch — Link OK",
+        status: "ok", statusText: "Port aktif semua ✓",
+        body: "Switch Cisco Catalyst 2960:\n• 24 port aktif ✓\n• Uptime: 120 hari\n• VLAN: 10 (staf), 20 (printer)\n• Jaringan fisik: NORMAL\n\nSwitch bukan masalahnya — cek DHCP server!",
+        theory: "Network switch bertugas menghubungkan perangkat dalam satu jaringan lokal (LAN). Jika switch normal tapi PC tidak dapat IP, masalah ada di DHCP server.",
         triggerTerm: false
       },
       "dhcp-server": {
-        icon: "🖥️", title: "DHCP Server — Service Crash",
-        status: "err", statusText: "isc-dhcp-server: FAILED",
-        body: "$ systemctl status isc-dhcp-server\n● isc-dhcp-server.service — FAILED\n   Active: failed (Result: exit-code)\n\nLog error:\nERROR: IP Conflict detected on 192.168.2.50\nERROR: Cannot allocate IP — pool exhausted or conflict\nAborted.\n\nDHCP crash karena konflik IP!",
-        theory: "DHCP server bisa crash jika ada konflik di jaringan. Setelah mengatasi konflik, service perlu di-restart. Konfigurasi DHCP ada di /etc/dhcp/dhcpd.conf — pastikan range tidak bertabrakan dengan IP statis.",
+        icon: "🌐", title: "DHCP Server — SERVICE MATI",
+        status: "err", statusText: "Service failed to start",
+        body: "Status: isc-dhcp-server FAILED ❌\n\nError: /etc/dhcp/dhcpd.conf line 7: syntax error\n\nKonfigurasi salah → service tidak bisa start\n→ PC tidak dapat IP address\n→ Tidak bisa akses jaringan",
+        theory: "DHCP (Dynamic Host Configuration Protocol) server secara otomatis memberikan IP address ke perangkat di jaringan. File konfigurasi: /etc/dhcp/dhcpd.conf. Jika ada syntax error, service tidak bisa start.",
         triggerTerm: true
       },
       "pc-lab": {
-        icon: "💻", title: "PC Staf-03 — IP Conflict!",
-        status: "err", statusText: "IP Statis Bertabrakan",
-        body: "PC milik Staf Keuangan:\nIP dikonfigurasi manual: 192.168.2.50 (statis)\n\nMasalah: IP 192.168.2.50 ada di dalam range DHCP!\nRange DHCP: 192.168.2.20 – 192.168.2.200\n\nSolusi: ganti IP statis PC ini ke 192.168.2.5 (di luar range), lalu restart DHCP server.",
-        theory: "Aturan penting: IP statis HARUS berada di luar range DHCP pool. Contoh: jika DHCP range 192.168.1.100–200, maka IP statis gunakan 192.168.1.2–99 atau 201–254.",
+        icon: "💻", title: "PC Staf Kantor — No IP Address",
+        status: "err", statusText: "169.254.x.x (APIPA)",
+        body: "IP PC staf: 169.254.x.x (APIPA)\n\nIP 169.254.x.x artinya PC TIDAK dapat IP dari DHCP!\nPC pakai IP self-assigned yang tidak bisa komunikasi ke server.\n\nPastikan DHCP server aktif untuk fix ini.",
+        theory: "APIPA (Automatic Private IP Addressing) = IP 169.254.x.x yang dipakai otomatis ketika perangkat tidak berhasil mendapat IP dari DHCP server. Solusi: perbaiki DHCP server.",
         triggerTerm: false
       },
       "ip-diagram": {
-        icon: "🗺️", title: "Diagram IP Kantor Kelurahan",
-        status: "ok", statusText: "📋 Referensi Konfigurasi",
-        body: "Konfigurasi jaringan kantor:\n\nNetwork   : 192.168.2.0/24\nServer IP : 192.168.2.1 (statis)\nGateway   : 192.168.2.1\nDHCP Range: 192.168.2.20 – 192.168.2.200\nDNS       : 8.8.8.8 & 8.8.4.4\nIP Printer: 192.168.2.5 (statis, di luar range)\n\nIP statis HARUS di luar range DHCP!",
-        theory: "Desain jaringan yang baik: pisahkan zona IP statis (server, printer) dan zona dinamis (DHCP). Contoh: .1–.19 untuk statis, .20–.200 untuk DHCP, .201–.254 cadangan.",
+        icon: "📊", title: "Diagram IP Kantor Kelurahan",
+        status: "ok", statusText: "Dokumentasi jaringan",
+        body: "Rencana IP Kantor:\n• Router: 192.168.10.1\n• DHCP Range: 192.168.10.50 - 192.168.10.200\n• Subnet: 255.255.255.0\n• DNS: 8.8.8.8, 8.8.4.4\n\nConfig DHCP harus sesuai diagram ini!",
+        theory: "Dokumentasi jaringan sangat penting! Selalu catat IP range, subnet mask, default gateway, dan DNS server untuk setiap jaringan yang dikelola.",
         triggerTerm: false
       },
       "error-ticket": {
-        icon: "📋", title: "Tiket Trouble #2024-042",
-        status: "warn", statusText: "Laporan kemarin",
-        body: "Dilaporkan oleh: Staf Keuangan\nWaktu: kemarin 16:32\n\n\"Saya ganti IP komputer saya sendiri ke .50 biar lebih mudah diingat. Setelah itu jaringan kantor jadi error semua. Maaf.\"\n\n— Root cause ketemu!",
-        theory: "",
+        icon: "🎫", title: "Tiket Laporan — Staf IT Kelurahan",
+        status: "warn", statusText: "Laporan jam 07:30",
+        body: "Laporan: 07:30 WIB\nSemua PC tidak bisa browsing & akses server.\nSudah dicoba restart PC — tidak membantu.\nDicoba cabut-colok kabel — tetap tidak bisa.\n\nDiagnosa staf: 'Mungkin internet putus'\nDiagnosa benar: DHCP server mati!",
+        theory: "Troubleshooting sistematis: selalu isolasi masalah. Kalau internet putus, semua lokasi terpengaruh. Kalau hanya satu kantor, masalahnya lokal — cek switch, DHCP, atau router lokal.",
         triggerTerm: false
       }
     },
 
     objectives: [
-      { id: "check-dhcp",    text: "Cek status DHCP server",          cmd: "systemctl status isc-dhcp-server" },
-      { id: "check-conflict", text: "Identifikasi IP conflict",       cmd: "ip addr" },
-      { id: "fix-config",    text: "Edit konfigurasi DHCP",           cmd: "nano /etc/dhcp/dhcpd.conf" },
-      { id: "restart-dhcp",  text: "Restart DHCP service",            cmd: "systemctl restart isc-dhcp-server" },
-      { id: "verify-dhcp",   text: "Verifikasi DHCP berjalan normal", cmd: "systemctl status isc-dhcp-server" }
+      { id: "check-dhcp",    text: "Cek status DHCP server",         cmd: "systemctl status isc-dhcp-server" },
+      { id: "edit-dhcp",     text: "Edit konfigurasi DHCP",          cmd: "nano /etc/dhcp/dhcpd.conf" },
+      { id: "restart-dhcp",  text: "Restart DHCP server",            cmd: "systemctl restart isc-dhcp-server" }
     ],
 
     hints: [
-      "Cek status DHCP: systemctl status isc-dhcp-server — lihat error log-nya.",
-      "Penyebab crash: IP conflict. Edit config: nano /etc/dhcp/dhcpd.conf.",
-      "Setelah fix config, restart: systemctl restart isc-dhcp-server"
+      "Cek status: systemctl status isc-dhcp-server",
+      "Edit konfigurasi: nano /etc/dhcp/dhcpd.conf",
+      "Restart: systemctl restart isc-dhcp-server"
     ]
   },
 
   // ══════════════════════════════════════════
-  // LEVEL 3 — Database Nilai Siswa Korup
+  // LEVEL 3 — Database Kependudukan Error
   // ══════════════════════════════════════════
   {
     id: 3,
-    title: "Nilai Raport Hilang Semua!",
-    mission: "Database nilai siswa korup — raport tidak bisa dicetak!",
-    badge: "🗄️ Database Savior",
+    title: "Database Kependudukan Rusak",
+    mission: "MySQL crash — data kependudukan ribuan warga tidak bisa diakses!",
+    badge: "💾 Database Hero",
     startScene: "lobby",
 
     scenes: {
       lobby: {
         type: "corridor",
-        label: "🏢 Dinas IT — Situasi Makin Serius",
+        label: "🏢 Dinas IT — Laporan Disdukcapil",
         doorSign: "SERVER ROOM C",
         chars: [
-          { id: "pak-heri", name: "Pak Heri" },
-          { id: "bu-guru", name: "Bu Retno" }
-        ],
-        dialogOnEnter: "intro"
+          { id: "pak-heri",  name: "Pak Heri" },
+          { id: "bu-retno",  name: "Bu Retno" }
+        ]
       },
       serverroom: {
         type: "serverroom",
-        label: "🖥️ Server Room C — Database Center",
+        label: "🖥️ Server Room C — Database Kota",
         chars: [
           { id: "kak-sari", name: "Kak Sari" }
         ],
-        dialogOnEnter: "enter_sr",
         objects: [
-          { id: "db-server",    label: "Database Server" },
-          { id: "monitor-err",  label: "Monitor Error" },
-          { id: "backup-drive", label: "Harddisk Backup" },
-          { id: "mysql-log",    label: "MySQL Error Log" },
-          { id: "recovery-usb", label: "USB Recovery Tools" }
+          { id: "db-server",    label: "Database Server MySQL" },
+          { id: "backup-drive", label: "Hard Drive Backup" },
+          { id: "error-log",    label: "Error Log MySQL" },
+          { id: "cron-config",  label: "Konfigurasi Cron Job" },
+          { id: "status-board", label: "Status Board IT" }
         ]
       }
     },
 
     dialogs: {
-      intro: [
-        { avatar: "😅", name: "Andi (Kamu)", text: "Seminggu magang, sudah selesaikan 2 krisis. Hari ini semoga---" },
-        { avatar: "😭", name: "Bu Retno", text: "ANDI! Database nilai siswa HILANG! Hari ini jadwal cetak raport untuk 1.200 siswa! Data semester genap tidak bisa dibuka!" },
-        { avatar: "😱", name: "Pak Heri", text: "MySQL server crash semalam karena mati lampu mendadak! Dan ternyata backup otomatis sudah tidak jalan selama 2 minggu! Aduh..." },
-        { avatar: "😅", name: "Andi (Kamu)", text: "Tenang Bu, tenang Pak. Selama ada harddisk backup, pasti bisa recover. Aku cek dulu ke server room." },
-        { avatar: "😭", name: "Bu Retno", text: "Orang tua siswa sudah antri dari pagi! Tolong ya, Andi... kamu satu-satunya harapan kami sekarang!" }
+      char_pak_heri: [
+        { avatar: "😅", name: "Andi (Kamu)", text: "Hari ketiga magang. Mana-mana ada masalah terus di kota ini..." },
+        { avatar: "😱", name: "Pak Heri", text: "Andi! Database sistem administrasi kota error besar! Bu Retno dari Disdukcapil sudah menunggu sejak pagi!" },
+        { avatar: "😟", name: "Bu Retno", text: "Sistem kami tidak bisa akses database sejak semalam! Data kependudukan ratusan ribu warga — KTP, KK, akta kelahiran — semua tidak bisa diakses!" },
+        { avatar: "😟", name: "Bu Retno", text: "Besok ada audit dari Kemendagri. Kalau data tidak bisa diakses, Dinas kami bisa kena sanksi berat!" },
+        { avatar: "😱", name: "Pak Heri", text: "Sari sudah standby di server room database. Andi, kamu bantu Sari ya — ini sangat krusial!" },
+        { avatar: "😅", name: "Andi (Kamu)", text: "Siap, Pak! Saya langsung ke server room!" }
       ],
-      enter_sr: [
-        { avatar: "😎", name: "Kak Sari", text: "Oke, situasinya: MySQL corrupt karena mati lampu tiba-tiba. InnoDB table-nya rusak." },
-        { avatar: "😎", name: "Kak Sari", text: "Kabar baiknya: ada harddisk backup dari 2 minggu lalu. Kita bisa repair table dulu — kalau gagal, restore dari backup. Cek semua perangkat dulu ya." }
-      ],
-      char_bu_guru: [
-        { avatar: "😭", name: "Bu Retno", text: "Andi, nilai-nilai itu hasil kerja keras guru-guru selama satu semester... jangan sampai hilang ya." },
-        { avatar: "😭", name: "Bu Retno", text: "Kalau berhasil recover, aku pastikan kamu dapat nilai PKL tertinggi!" }
+      char_bu_retno: [
+        { avatar: "😟", name: "Bu Retno", text: "Tolong ya, Andi. Data warga itu sangat penting. Besok ada audit dan semua dokumen harus bisa diakses." },
+        { avatar: "😟", name: "Bu Retno", text: "Kami sudah tidak bisa kerja sejak tadi malam. Staf semua bingung mau ngapain tanpa akses database." }
       ],
       char_kak_sari: [
-        { avatar: "😎", name: "Kak Sari", text: "Coba mysqlcheck dulu untuk repair — biasanya bisa recover. Kalau tidak, baru restore backup." },
-        { avatar: "😎", name: "Kak Sari", text: "Command-nya ada di recovery USB. Jangan panik, MySQL recovery biasanya berhasil!" }
+        { avatar: "😎", name: "Kak Sari", text: "Andi, masalah kali ini lebih serius dari sebelumnya. MySQL database crash karena ada korupsi data." },
+        { avatar: "😎", name: "Kak Sari", text: "*tunjuk server besar* Ini database server utama. Berisi data kependudukan seluruh warga kota. Sekarang MySQL-nya error dan tidak bisa start normal." },
+        { avatar: "😎", name: "Kak Sari", text: "Kita harus stop MySQL dulu, jalankan mysqlcheck untuk repair tabel yang corrupt, baru start lagi." },
+        { avatar: "😎", name: "Kak Sari", text: "PENTING: jangan hapus data apapun! Kita repair, bukan reset. Setelah database normal, kita juga setup cron job untuk maintenance rutin." },
+        { avatar: "😎", name: "Kak Sari", text: "Inspect semua item di sini dulu — terutama error log. Pahami kondisinya sebelum mulai. Hati-hati ya!" }
       ]
     },
 
     items: {
       "db-server": {
-        icon: "🗄️", title: "MySQL Server — InnoDB Corrupt",
-        status: "err", statusText: "Table corrupt — cannot open",
-        body: "Status MySQL:\n● mysql.service — FAILED\nError: InnoDB corruption detected!\n\nDatabase yang bermasalah:\n• nilai_siswa → CORRUPTED ❌\n• data_guru → OK ✓\n• jadwal → OK ✓\n\nHanya tabel nilai_siswa yang corrupt.",
-        theory: "InnoDB adalah storage engine MySQL default. Saat server mati mendadak (tanpa shutdown proper), InnoDB bisa corrupt karena transaksi yang belum selesai. Solusi: mysqlcheck untuk repair, atau restore backup.",
+        icon: "🗄️", title: "Database Server — MySQL ERROR",
+        status: "err", statusText: "InnoDB: corruption detected",
+        body: "MySQL Server:\n• Versi: MySQL 8.0\n• Status: CRASHED ❌\n• Error: InnoDB table corruption\n• Database: kependudukan_kota\n• Tabel corrupt: tb_warga, tb_kk\n\nHarus: stop → repair → start",
+        theory: "InnoDB corruption bisa terjadi karena power failure, disk error, atau bug. Cara repair: mysqlcheck --auto-repair --all-databases atau mysqlcheck -u root -p --auto-repair nama_db.",
         triggerTerm: true
-      },
-      "monitor-err": {
-        icon: "🖥", title: "Monitor — MySQL Error Detail",
-        status: "err", statusText: "Crash log terlihat",
-        body: "MySQL error log (/var/log/mysql/error.log):\n\n[ERROR] InnoDB: Corruption in the InnoDB tablespace\n[ERROR] Table './sekolah/nilai_siswa' is marked as crashed\n[ERROR] Attempting automatic repair...\n[ERROR] Repair failed. Manual repair needed.\n\nPerlu: mysqlcheck atau restore backup.",
-        theory: "MySQL menyimpan error log di /var/log/mysql/error.log. Selalu cek log ini saat troubleshooting MySQL. Perintah: tail -100 /var/log/mysql/error.log",
-        triggerTerm: false
       },
       "backup-drive": {
-        icon: "💽", title: "Harddisk Backup — 2 Minggu Lalu",
-        status: "warn", statusText: "Backup tersedia — agak lama",
-        body: "Isi harddisk backup:\n• backup_nilai_siswa_2024-06-01.sql (856 MB)\n• backup_nilai_siswa_2024-05-15.sql (812 MB)\n\nBackup terakhir: 2 minggu lalu.\nData 2 minggu terakhir mungkin hilang jika harus restore.\n\nCoba repair dulu sebelum restore!",
-        theory: "Best practice backup: jadwalkan minimal harian dengan cron job. Perintah backup MySQL: mysqldump -u root -p nama_db > backup.sql. Untuk restore: mysql -u root -p nama_db < backup.sql",
-        triggerTerm: true
-      },
-      "mysql-log": {
-        icon: "📋", title: "MySQL Log — Riwayat Crash",
-        status: "warn", statusText: "PLN byar-pet kemarin",
-        body: "Rekonstruksi kejadian:\n\n21:47 — PLN mati mendadak\n21:47 — Server shutdown tidak normal\n21:47 — MySQL tidak sempat flush data\n22:15 — Listrik kembali, server auto-restart\n22:16 — MySQL gagal start: InnoDB corrupt\n22:17 — Alert ke monitoring (tidak ada yang lihat)\n\nRoot cause: shutdown mendadak tanpa UPS.",
-        theory: "UPS (Uninterruptible Power Supply) adalah perangkat WAJIB di server room untuk mencegah kerusakan akibat mati lampu. Tanpa UPS, server bisa corrupt database, kehilangan data, atau hardware rusak.",
+        icon: "💾", title: "Hard Drive Backup — 3 Hari Lalu",
+        status: "warn", statusText: "Backup terakhir: 3 hari lalu",
+        body: "Backup tersedia:\n• backup_kependudukan_2024-03-10.sql (12 GB)\n• backup_kependudukan_2024-03-08.sql (11.8 GB)\n\n⚠️ Backup 3 hari lalu — akan kehilangan data 3 hari!\nLebih baik coba repair dulu sebelum restore backup.",
+        theory: "Backup rutin sangat penting! Best practice: backup harian otomatis dengan cron job. Contoh: 0 2 * * * mysqldump -u root -p[pass] nama_db > /backup/db_$(date +%F).sql",
         triggerTerm: false
       },
-      "recovery-usb": {
-        icon: "🔧", title: "USB Recovery Tools",
-        status: "ok", statusText: "📋 Panduan Recovery MySQL",
-        body: "Langkah recovery MySQL:\n\n1. systemctl stop mysql → stop dulu\n2. mysqlcheck -u root -p --all-databases --auto-repair → coba repair\n3. systemctl start mysql → coba jalankan\n4. mysql -u root -p -e \"SHOW TABLES\" sekolah → verifikasi\n5. (Jika gagal) mysql -u root -p sekolah < backup.sql → restore\n\nCoba repair dulu!",
-        theory: "",
+      "error-log": {
+        icon: "📋", title: "Error Log MySQL",
+        status: "err", statusText: "InnoDB: table corruption",
+        body: "Log Error MySQL (/var/log/mysql/error.log):\n\n[ERROR] InnoDB: Table kependudukan_kota/tb_warga is marked as crashed\n[ERROR] MySQL: Got error 126 from storage engine\n[ERROR] Can't open file: './kependudukan_kota/tb_warga.MYI'\n\nDiagnosa: korupsi tabel InnoDB",
+        theory: "Error log MySQL ada di /var/log/mysql/error.log (Ubuntu). Selalu cek log ini saat MySQL bermasalah. Error 126 berarti tabel corrupt dan perlu direpair.",
+        triggerTerm: false
+      },
+      "cron-config": {
+        icon: "⏰", title: "Konfigurasi Cron Job",
+        status: "warn", statusText: "Tidak ada maintenance terjadwal!",
+        body: "Cron job saat ini: (kosong)\n\nTidak ada jadwal maintenance database!\nTidak ada backup otomatis!\nTidak ada pembersihan log otomatis!\n\nIni penyebab masalah tidak terdeteksi dini.",
+        theory: "Cron job adalah jadwal tugas otomatis di Linux. Format: menit jam hari bulan hari-minggu perintah. Contoh: '0 2 * * *' = setiap hari jam 02:00. Edit dengan: crontab -e",
+        triggerTerm: true
+      },
+      "status-board": {
+        icon: "📊", title: "Status Board — Monitoring Kota",
+        status: "err", statusText: "Database: DOWN",
+        body: "Status Layanan Kota (Real-time):\n✓ Website Kota — OK\n✓ Jaringan — OK\n❌ Database Kependudukan — DOWN\n❌ Sistem KTP Online — DOWN\n❌ Portal Layanan Warga — ERROR\n\nSemua layanan yang pakai database = mati!",
+        theory: "Monitoring adalah kunci operasional IT. Tools monitoring populer: Nagios, Zabbix, Grafana. Untuk pemula, cukup pakai cron job + script bash + email alert.",
         triggerTerm: false
       }
     },
 
     objectives: [
-      { id: "stop-mysql",    text: "Stop MySQL service",                cmd: "systemctl stop mysql" },
-      { id: "repair-db",     text: "Repair database yang corrupt",      cmd: "mysqlcheck -u root -p --all-databases --auto-repair" },
-      { id: "start-mysql",   text: "Start MySQL service",               cmd: "systemctl start mysql" },
-      { id: "verify-db",     text: "Verifikasi database bisa diakses",  cmd: "systemctl status mysql" },
-      { id: "backup-config", text: "Setup backup otomatis (crontab)",   cmd: "crontab -e" }
+      { id: "stop-mysql",    text: "Hentikan MySQL service",          cmd: "systemctl stop mysql" },
+      { id: "repair-db",     text: "Repair database yang corrupt",    cmd: "mysqlcheck --auto-repair" },
+      { id: "start-mysql",   text: "Jalankan kembali MySQL",          cmd: "systemctl start mysql" },
+      { id: "setup-cron",    text: "Setup cron job maintenance",      cmd: "crontab -e" }
     ],
 
     hints: [
-      "Stop MySQL dulu sebelum repair: systemctl stop mysql",
-      "Repair dengan: mysqlcheck -u root -p --all-databases --auto-repair",
-      "Setelah repair, start ulang: systemctl start mysql"
+      "Stop MySQL dulu: systemctl stop mysql",
+      "Repair database: mysqlcheck --auto-repair --all-databases",
+      "Setup cron: crontab -e"
     ]
   },
 
   // ══════════════════════════════════════════
-  // LEVEL 4 — Website Kota Kena Deface!
+  // LEVEL 4 — Serangan Siber ke Website Kota
   // ══════════════════════════════════════════
   {
     id: 4,
-    title: "Website Kota Netville Dihack!",
-    mission: "Website resmi kota di-deface hacker — darurat keamanan!",
-    badge: "🛡️ Security Guardian",
+    title: "Serangan Siber ke Kota",
+    mission: "Website kota diserang! Aktifkan firewall dan blokir penyerang!",
+    badge: "🛡️ Cyber Defender",
     startScene: "lobby",
 
     scenes: {
       lobby: {
         type: "corridor",
-        label: "🏢 Dinas IT — SIAGA SATU!",
-        doorSign: "SERVER ROOM KEAMANAN",
+        label: "🏢 Dinas IT — Situasi Darurat Siber",
+        doorSign: "SERVER ROOM D",
         chars: [
-          { id: "pak-heri", name: "Pak Heri" },
-          { id: "wali-kota", name: "Pak Wali Kota" }
-        ],
-        dialogOnEnter: "intro"
+          { id: "pak-heri",     name: "Pak Heri" },
+          { id: "pak-walikota", name: "Pak Wali Kota" }
+        ]
       },
       serverroom: {
         type: "serverroom",
-        label: "🖥️ Server Room — Security Center",
+        label: "🖥️ Server Room D — Security Ops",
         chars: [
           { id: "kak-sari", name: "Kak Sari" }
         ],
-        dialogOnEnter: "enter_sr",
         objects: [
-          { id: "defaced-web",  label: "Website Terdeface" },
-          { id: "access-log",   label: "Apache Access Log" },
-          { id: "firewall",     label: "UFW Firewall" },
-          { id: "vuln-scan",    label: "Hasil Vulnerability Scan" },
-          { id: "server-ssh",   label: "SSH Audit Report" }
+          { id: "access-log",  label: "Access Log Mencurigakan" },
+          { id: "firewall",    label: "Firewall UFW" },
+          { id: "ids-monitor", label: "Monitor IDS" },
+          { id: "attack-map",  label: "Peta Serangan" },
+          { id: "patch-notes", label: "Catatan Patch Security" }
         ]
       }
     },
 
     dialogs: {
-      intro: [
-        { avatar: "😱", name: "Pak Heri", text: "ANDI! DARURAT! Website netville.go.id di-deface! Tampilan diganti tulisan hacker! Sudah viral di Twitter!" },
-        { avatar: "😤", name: "Pak Wali Kota", text: "INI MEMALUKAN! Website resmi kota penuh dengan tulisan 'HACKED BY XYZ'! Wartawan sudah menelepon! BERESIN SEKARANG!" },
-        { avatar: "😱", name: "Pak Heri", text: "Andi, ini paling parah yang pernah kita alami. Firewall tidak aktif, ada file mencurigakan di server, website sudah diganti hacker." },
-        { avatar: "😅", name: "Andi (Kamu)", text: "Baik Pak. Saya handle. Kak Sari, kita masuk server room — kita bersihkan dan amankan semuanya!" }
+      char_pak_heri: [
+        { avatar: "😅", name: "Andi (Kamu)", text: "*lihat berita* 'Website pemerintah kota kena serangan siber'... ini nyata dan itu server kita?!" },
+        { avatar: "😰", name: "Pak Heri", text: "ANDI! Kamu sudah lihat beritanya? Website kota sedang diserang sekarang! Traffic abnormal dari ratusan IP luar negeri!" },
+        { avatar: "😤", name: "Pak Wali Kota", text: "Ini tidak bisa ditolerir! Website pemerintah kota HARUS aman! Ini masalah kepercayaan publik dan kedaulatan digital!" },
+        { avatar: "😤", name: "Pak Wali Kota", text: "Saya minta penanganan profesional! Kalau dalam 2 jam belum selesai, saya evaluasi seluruh divisi IT!" },
+        { avatar: "😰", name: "Pak Heri", text: "Sari sudah di server room security. Andi — ini misi terpenting sejauh ini. Tolong bantu Sari amankan server!" },
+        { avatar: "😤", name: "Andi (Kamu)", text: "Siap, Pak! Saya ke server room sekarang! *dalam hati: ini yang namanya incident response nyata!*" }
       ],
-      enter_sr: [
-        { avatar: "😎", name: "Kak Sari", text: "Oke, ini serius. Hacker masuk lewat celah di PHP yang tidak diupdate. Firewall memang belum aktif sejak migrasi server bulan lalu." },
-        { avatar: "😎", name: "Kak Sari", text: "Langkah kita: identifikasi celah, bersihkan file hacker, aktifkan firewall, update sistem. Setiap detik penting — cek semua objek dulu." }
-      ],
-      char_wali_kota: [
-        { avatar: "😤", name: "Pak Wali Kota", text: "Saya tidak mau tahu caranya. Saya mau website bersih dan sistem aman dalam 1 JAM. Mengerti?!" },
-        { avatar: "😤", name: "Pak Wali Kota", text: "Dan saya ingin laporan tertulis — bagaimana ini bisa terjadi dan apa yang sudah dilakukan!" }
+      char_pak_walikota: [
+        { avatar: "😤", name: "Pak Wali Kota", text: "Kamu yang magang itu ya? Aku dengar kamu cukup handal. Jangan kecewakan kota ini!" },
+        { avatar: "😤", name: "Pak Wali Kota", text: "Keamanan digital kota adalah prioritas. Pastikan semua penyerang diblokir dan sistem aman!" }
       ],
       char_kak_sari: [
-        { avatar: "😎", name: "Kak Sari", text: "Prioritas: aktifkan UFW dulu, blokir IP hacker, baru bersihkan file defacement." },
-        { avatar: "😎", name: "Kak Sari", text: "Setelah aman, update Apache dan PHP supaya celah yang sama tidak bisa dipakai lagi." }
+        { avatar: "😎", name: "Kak Sari", text: "Andi! Situasinya serius — ini serangan DDoS dan brute force sekaligus. Tapi kita bisa handle." },
+        { avatar: "😎", name: "Kak Sari", text: "*tunjuk monitor* Lihat — traffic abnormal dari ratusan IP. Ini pola serangan terkoordinasi. Firewall kita belum aktif — makanya serangan bisa masuk." },
+        { avatar: "😎", name: "Kak Sari", text: "Kita pakai UFW — Uncomplicated Firewall. Tools ini simpel tapi powerful. Kita aktifkan, buka port yang diperlukan, lalu blokir IP penyerang." },
+        { avatar: "😎", name: "Kak Sari", text: "PENTING: jangan blokir sembarangan! Baca log dulu dengan teliti. Bedakan traffic normal vs serangan." },
+        { avatar: "😎", name: "Kak Sari", text: "Inspect semua item di sini dulu — terutama access log dan attack map. Pahami polanya baru bertindak!" }
       ]
     },
 
     items: {
-      "defaced-web": {
-        icon: "🌐", title: "Website netville.go.id — TERDEFACE",
-        status: "err", statusText: "HACKED — Konten diganti",
-        body: "Tampilan website saat ini:\n╔══════════════════════╗\n║  HACKED BY xX_N3T    ║\n║  SECURITY IS A JOKE  ║\n║  Defaced: 2024-06-18 ║\n║  Your firewall = 0   ║\n╚══════════════════════╝\n\nFile index.html sudah diganti!\nFile asli di: /var/www/html/index.html.bak",
-        theory: "Website defacement adalah serangan di mana hacker mengganti tampilan website dengan pesan mereka. Biasanya lewat celah: SQL injection, RCE (Remote Code Execution), atau file upload vulnerability.",
-        triggerTerm: true
-      },
       "access-log": {
-        icon: "📋", title: "Apache Access Log — Jejak Hacker",
-        status: "err", statusText: "IP berbahaya teridentifikasi",
-        body: "Log mencurigakan (/var/log/apache2/access.log):\n\n185.220.101.45 - POST /upload.php HTTP/1.1 200\n185.220.101.45 - GET /shell.php HTTP/1.1 200\n185.220.101.45 - GET /?cmd=ls HTTP/1.1 200\n185.220.101.45 - POST /shell.php HTTP/1.1 200\n\nIP Hacker: 185.220.101.45\nCelah masuk: file upload tidak terproteksi!",
-        theory: "Apache access log menyimpan semua HTTP request. Ini adalah sumber forensik penting. Pola mencurigakan: banyak POST ke file .php tidak dikenal, atau request dengan parameter ?cmd=.",
-        triggerTerm: false
+        icon: "📜", title: "Apache Access Log — Mencurigakan",
+        status: "err", statusText: "2847 request/menit dari 1 IP!",
+        body: "Access log mencurigakan:\n185.220.101.45 - 2847 req/mnt ❌\n185.220.101.46 - 1923 req/mnt ❌\n45.142.212.100 - 1456 req/mnt ❌\n\nNormal traffic: 50-100 req/mnt\nIni DDoS (Distributed Denial of Service)!\n\nIP target blokir: 185.220.101.45",
+        theory: "DDoS attack membanjiri server dengan traffic palsu sehingga server kewalahan melayani user asli. Cek: cat /var/log/apache2/access.log | awk '{print $1}' | sort | uniq -c | sort -rn",
+        triggerTerm: true
       },
       "firewall": {
-        icon: "🔥", title: "UFW Firewall — INACTIVE",
-        status: "err", statusText: "Firewall OFF sejak migrasi",
-        body: "$ ufw status\nStatus: inactive\n\nSemua 65,535 port terbuka!\nPort yang seharusnya ditutup:\n• 3306 (MySQL) — TERBUKA ❌\n• 8080 (Dev port) — TERBUKA ❌\n• Semua port lain — TERBUKA ❌\n\nHanya port 22 (SSH) dan 80 (HTTP) yang boleh terbuka!",
-        theory: "Prinsip least privilege pada firewall: tutup SEMUA port, buka hanya yang diperlukan. Untuk web server publik: buka port 80 (HTTP), 443 (HTTPS), dan 22 (SSH) khusus IP admin.",
+        icon: "🔥", title: "UFW Firewall — BELUM AKTIF",
+        status: "err", statusText: "Status: inactive",
+        body: "UFW Firewall Status: INACTIVE ❌\n\nFirewall belum pernah dikonfigurasi!\nSemua traffic masuk = tidak ada filter\nSemua port = terbuka untuk umum\n\nIni kenapa serangan bisa masuk dengan mudah.",
+        theory: "UFW (Uncomplicated Firewall) adalah antarmuka sederhana untuk iptables di Ubuntu. Perintah dasar: ufw enable, ufw allow 80, ufw deny from [IP], ufw status.",
         triggerTerm: true
       },
-      "vuln-scan": {
-        icon: "🔍", title: "Vulnerability Scan — Hasil",
-        status: "err", statusText: "3 celah kritis ditemukan",
-        body: "Hasil scan (kemarin):\n\n[CRITICAL] PHP 7.2 — EOL, tidak dapat update keamanan\n[CRITICAL] upload.php tanpa validasi file type\n[HIGH]    Apache 2.4.29 — ada 4 CVE belum dipatch\n[MEDIUM]  Directory listing aktif di /var/www/html/\n\nRekomendasi: update semua, nonaktifkan upload.php",
-        theory: "Vulnerability scan (menggunakan tool seperti Nikto, OpenVAS) menemukan celah keamanan. CVE (Common Vulnerabilities and Exposures) adalah database resmi kerentanan yang sudah diketahui publik.",
+      "ids-monitor": {
+        icon: "👁️", title: "IDS Monitor — Alert Aktif",
+        status: "warn", statusText: "47 alert keamanan aktif",
+        body: "Intrusion Detection System Alert:\n\n[HIGH] Port scan dari 185.220.101.45\n[HIGH] SQL injection attempt\n[MED] Brute force SSH dari 45.142.212.100\n[MED] XSS attempt pada form login\n[LOW] Directory traversal attempt\n\n→ Blokir IP yang HIGH priority dulu!",
+        theory: "IDS (Intrusion Detection System) memantau traffic jaringan dan memberikan alert saat ada aktivitas mencurigakan. Tools populer: Snort, Suricata, OSSEC.",
         triggerTerm: false
       },
-      "server-ssh": {
-        icon: "🔐", title: "SSH Audit — Konfigurasi Lemah",
-        status: "warn", statusText: "SSH bisa dibrute-force",
-        body: "Masalah konfigurasi SSH:\n• PermitRootLogin yes → berbahaya!\n• PasswordAuthentication yes → rentan brute-force\n• MaxAuthTries 6 → terlalu banyak\n• Port 22 → port default, mudah di-scan\n\nSudah ada 3,421 percobaan login gagal hari ini!",
-        theory: "Best practice SSH: nonaktifkan login root (PermitRootLogin no), gunakan SSH key bukan password, ganti port default, dan batasi MaxAuthTries. Ini drastis mengurangi risiko brute-force.",
+      "attack-map": {
+        icon: "🗺️", title: "Peta Serangan — Sumber IP",
+        status: "err", statusText: "Serangan dari 12 negara",
+        body: "Sumber serangan (top 5):\n1. Rusia: 185.220.101.0/24 — 45%\n2. China: 45.142.212.0/24 — 23%\n3. Romania: 193.169.144.0/24 — 15%\n4. Brazil: 177.67.128.0/24 — 10%\n5. Lain-lain — 7%\n\nIP utama untuk diblokir:\n185.220.101.45, 45.142.212.100",
+        theory: "Dalam incident response: identifikasi sumber → blokir IP → aktifkan proteksi → dokumentasi → report. Tools: fail2ban untuk auto-block IP yang brute force.",
+        triggerTerm: false
+      },
+      "patch-notes": {
+        icon: "📋", title: "Catatan Patch Keamanan",
+        status: "warn", statusText: "38 patch belum diinstall!",
+        body: "Security patches yang belum diinstall:\n• CVE-2024-0001: Apache critical\n• CVE-2024-0008: OpenSSL high\n• CVE-2024-0012: PHP medium\n...dan 35 lainnya\n\nServer tidak diupdate sejak 6 bulan lalu!\nIni membuka celah keamanan besar.",
+        theory: "Update rutin adalah fondasi keamanan server. Perintah: apt update && apt upgrade -y. Best practice: aktifkan unattended-upgrades untuk security patch otomatis.",
         triggerTerm: false
       }
     },
 
     objectives: [
-      { id: "check-log",     text: "Analisis log untuk temukan IP hacker", cmd: "cat /var/log/apache2/access.log" },
-      { id: "enable-ufw",    text: "Aktifkan UFW firewall",                cmd: "ufw enable" },
-      { id: "allow-ports",   text: "Buka hanya port yang diperlukan",      cmd: "ufw allow 80" },
-      { id: "block-hacker",  text: "Blokir IP hacker",                     cmd: "ufw deny from 185.220.101.45" },
-      { id: "restore-web",   text: "Pulihkan file website asli",           cmd: "ufw status" }
+      { id: "check-log",    text: "Baca access log mencurigakan",     cmd: "cat /var/log/apache2/access.log" },
+      { id: "enable-ufw",   text: "Aktifkan firewall UFW",            cmd: "ufw enable" },
+      { id: "allow-http",   text: "Izinkan traffic HTTP normal",      cmd: "ufw allow 80" },
+      { id: "block-ip",     text: "Blokir IP penyerang utama",        cmd: "ufw deny from 185.220.101.45" },
+      { id: "check-ufw",    text: "Verifikasi status firewall",       cmd: "ufw status" }
     ],
 
     hints: [
-      "Cek log dulu: cat /var/log/apache2/access.log — cari IP yang mencurigakan.",
-      "Aktifkan firewall: ufw enable, lalu buka port 80: ufw allow 80.",
-      "Blokir IP hacker: ufw deny from 185.220.101.45"
+      "Cek log: cat /var/log/apache2/access.log",
+      "Aktifkan firewall: ufw enable, lalu ufw allow 80",
+      "Blokir IP: ufw deny from 185.220.101.45"
     ]
   },
 
   // ══════════════════════════════════════════
-  // LEVEL 5 — BOSS: Datacenter Down Saat Event Kota!
+  // LEVEL 5 — Misi Akhir: Full System Deployment
   // ══════════════════════════════════════════
   {
     id: 5,
-    title: "BOSS: Datacenter Lumpuh!",
-    mission: "Semua sistem kota mati saat Event Hari Jadi Netville!",
+    title: "Misi Akhir: Bangun Ulang Kota",
+    mission: "Deploy ulang semua sistem IT kota — dari nol! Ini momen terbesarmu!",
     badge: "🏆 Master NetAdmin",
     startScene: "lobby",
 
     scenes: {
       lobby: {
         type: "corridor",
-        label: "🏢 Datacenter Utama Kota Netville",
-        doorSign: "MAIN DATACENTER — RESTRICTED",
+        label: "🏢 Dinas IT — Hari Terakhir PKL",
+        doorSign: "SERVER ROOM UTAMA",
         chars: [
-          { id: "pak-heri", name: "Pak Heri" },
-          { id: "wali-kota", name: "Pak Wali Kota" }
-        ],
-        dialogOnEnter: "intro"
+          { id: "pak-heri",     name: "Pak Heri" },
+          { id: "pak-walikota", name: "Pak Wali Kota" }
+        ]
       },
       serverroom: {
         type: "serverroom",
-        label: "🖥️ Main Datacenter — BLACKOUT",
+        label: "🖥️ Server Room Utama — Full Deployment",
         chars: [
           { id: "kak-sari", name: "Kak Sari" }
         ],
-        dialogOnEnter: "enter_sr",
         objects: [
           { id: "main-server",   label: "Server Utama Kota" },
-          { id: "load-monitor",  label: "Load Monitor" },
-          { id: "network-core",  label: "Core Network" },
-          { id: "firewall-cfg",  label: "Firewall Config" },
-          { id: "recovery-plan", label: "Disaster Recovery Plan" }
+          { id: "deploy-plan",   label: "Rencana Deployment" },
+          { id: "network-core",  label: "Core Network Switch" },
+          { id: "monitoring",    label: "Monitoring Dashboard" },
+          { id: "checklist",     label: "Checklist Deployment" }
         ]
       }
     },
 
     dialogs: {
-      intro: [
-        { avatar: "😅", name: "Andi (Kamu)", text: "Hari terakhir magang. Pak Heri bilang ada Event Hari Jadi Kota — streaming langsung, 50.000 penonton online. Semoga lancar..." },
-        { avatar: "🚨", name: "Pak Heri", text: "ANDI!!! DARURAT LEVEL MAXIMUM!! SEMUA SISTEM KOTA MATI!! E-government, CCTV kota, website streaming, semuanya DOWN!!" },
-        { avatar: "😰", name: "Pak Wali Kota", text: "INI MEMALUKAN NASIONAL! Acara Hari Jadi Kota Netville ditonton LANGSUNG oleh Presiden! Dan sistemnya mati semua!!" },
-        { avatar: "😰", name: "Pak Wali Kota", text: "Siapapun yang bisa beresin ini dalam 30 menit — dia adalah pahlawan kota Netville! SIAPA YANG BISA?!" },
-        { avatar: "💪", name: "Andi (Kamu)", text: "Saya, Pak. Andi — siswa magang. Beri saya 30 menit, saya akan beresin semua sistem ini." },
-        { avatar: "😎", name: "Kak Sari", text: "Keren Andi! Aku sudah diagnosa: traffic event overload firewall — salah rules. Ini challenging tapi kamu sudah handle 4 krisis sebelumnya. Kamu pasti bisa!" }
-      ],
-      enter_sr: [
-        { avatar: "😎", name: "Kak Sari", text: "Situasinya: traffic 50K penonton streaming masuk serentak, firewall salah rules — DDoS protection-nya justru block traffic legit!" },
-        { avatar: "😎", name: "Kak Sari", text: "Kita perlu: fix firewall rules, restart semua service berurutan, verifikasi semua sistem. Semua ilmu dari level 1-4 kamu butuhkan sekarang. GO!" }
-      ],
       char_pak_heri: [
-        { avatar: "😱", name: "Pak Heri", text: "Andi... aku yakin kamu bisa. Kamu sudah buktikan berkali-kali selama magang ini. Ini momen puncaknya!" },
-        { avatar: "😱", name: "Pak Heri", text: "Presiden sedang nonton livestream yang error... tolong ya ANDI!!" }
+        { avatar: "😅", name: "Andi (Kamu)", text: "*tarik napas panjang* Hari terakhir magang. Tidak menyangka sudah sejauh ini... dari yang panik-panik sampai bisa handle krisis sendiri." },
+        { avatar: "😊", name: "Pak Heri", text: "Andi! Ini hari terakhir magang kamu sekaligus misi terbesar dan terpenting yang pernah ada di divisi ini!" },
+        { avatar: "😊", name: "Pak Wali Kota", text: "Setelah semua insiden yang berhasil kamu tangani, aku percaya kamu mampu. Kita akan deploy ulang SELURUH infrastruktur IT kota — lebih kuat, lebih aman!" },
+        { avatar: "😊", name: "Pak Wali Kota", text: "Ini investasi besar kota. Dan kamu, Andi dari SMK TKJ — akan jadi bagian dari sejarah ini!" },
+        { avatar: "😊", name: "Pak Heri", text: "Sari sudah siapkan server room. Andi, ini momen paling epic dalam perjalanan magangmu. Buktikan semua yang sudah kamu pelajari!" },
+        { avatar: "😤", name: "Andi (Kamu)", text: "*senyum mantap* Siap, Pak! Saya tidak akan mengecewakan kota ini. *dalam hati: dari siswa kikuk hari pertama... sampai di titik ini. Let's go!*" }
+      ],
+      char_pak_walikota: [
+        { avatar: "😊", name: "Pak Wali Kota", text: "Andi, kota ini berterima kasih atas kerja kerasmu. Kamu membuktikan bahwa siswa SMK pun bisa jadi garda terdepan IT pemerintahan!" },
+        { avatar: "😊", name: "Pak Wali Kota", text: "Setelah lulus nanti, ada tempat untukmu di sini. Sungguh." }
       ],
       char_kak_sari: [
-        { avatar: "😎", name: "Kak Sari", text: "Urutan perbaikan: 1) Perbaiki firewall rules, 2) Restart networking, 3) Restart semua service, 4) Verifikasi." },
-        { avatar: "😎", name: "Kak Sari", text: "Setelah beres, kita juga perlu setup rate limiting supaya tidak overload lagi. Kamu sudah siap!" }
+        { avatar: "😎", name: "Kak Sari", text: "*senyum bangga* Andi... kamu sudah jauh berkembang dari hari pertama. Sekarang, misi terakhir dan terbesar." },
+        { avatar: "😎", name: "Kak Sari", text: "Kita akan deploy ulang seluruh sistem: firewall bersih, jaringan bersih, semua service distart ulang dari awal dengan konfigurasi yang benar." },
+        { avatar: "😎", name: "Kak Sari", text: "*tunjuk whiteboard* Urutan deployment SANGAT penting: Reset firewall → Allow port yang diperlukan → Restart networking → Restart semua service → Verifikasi." },
+        { avatar: "😎", name: "Kak Sari", text: "Kalau urutan salah, bisa ada layanan yang tertutup atau jaringan yang terputus. Hati-hati tapi percaya diri." },
+        { avatar: "😎", name: "Kak Sari", text: "Inspect semua perangkat, pahami kondisi awal, lalu mulai deployment. Ini saat kamu tunjukkan semua yang sudah kamu pelajari. Aku percaya kamu!" }
       ]
     },
 
     items: {
       "main-server": {
-        icon: "💀", title: "Server Utama — SEMUA SERVICE DOWN",
-        status: "err", statusText: "Total system failure",
-        body: "Status semua service kota:\n• e-government.service  → FAILED ❌\n• streaming.service      → FAILED ❌\n• cctv-hub.service       → FAILED ❌\n• apache2.service        → FAILED ❌\n• mysql.service          → FAILED ❌\n• networking.service     → ERROR  ❌\n\nRoot cause: firewall rules salah blokir traffic internal!",
-        theory: "Ketika semua service gagal sekaligus, selalu cari root cause di layer paling bawah: network. Jika network error, semua service di atasnya otomatis gagal karena tidak bisa bind ke interface.",
+        icon: "🖥️", title: "Server Utama Kota — Siap Deploy",
+        status: "warn", statusText: "Konfigurasi lama — perlu fresh deploy",
+        body: "Server Dell PowerEdge R740:\n• OS: Ubuntu Server 22.04 LTS ✓\n• RAM: 32GB ✓ | Disk: 2TB ✓\n• Status: Running dengan konfigurasi lama\n\nPerlu fresh deployment:\n• Firewall baru ✓\n• Service restart semua ✓\n• Network config baru ✓",
+        theory: "Full deployment adalah proses install dan konfigurasi ulang semua komponen sistem. Urutan: network → security → services → verification. Dokumentasikan setiap langkah!",
         triggerTerm: true
       },
-      "load-monitor": {
-        icon: "📊", title: "Load Monitor — Traffic Overload",
-        status: "err", statusText: "50K request/detik",
-        body: "Traffic saat ini:\n• Request/detik: 50,247 (EXTREME!)\n• Normal maksimum: 500 req/detik\n• CPU Load: 99.8%\n• RAM: 31.8 GB / 32 GB\n• Network: 9.8 Gbps / 10 Gbps\n\nFirewall DDoS protection aktif → tapi salah setting → block semua traffic termasuk yang legit!",
-        theory: "Rate limiting dan DDoS protection harus dikonfigurasi dengan hati-hati. Jika threshold terlalu rendah, traffic normal pun terblokir (false positive). Gunakan UFW rate limiting: ufw limit ssh.",
+      "deploy-plan": {
+        icon: "📋", title: "Rencana Deployment — Tahapan",
+        status: "ok", statusText: "Dokumen resmi deployment",
+        body: "RENCANA DEPLOYMENT KOTA:\n\nFase 1 — Security:\n• Reset & configure UFW\n• Allow hanya port yang diperlukan\n\nFase 2 — Network:\n• Restart networking service\n\nFase 3 — Services:\n• Start/restart semua service\n\nFase 4 — Verification:\n• Cek semua service running",
+        theory: "Deployment plan adalah dokumen wajib sebelum melakukan perubahan besar di production. Tanpa plan, risiko outage dan kesalahan sangat tinggi.",
         triggerTerm: false
       },
       "network-core": {
-        icon: "🔌", title: "Core Network — Interface Error",
-        status: "err", statusText: "eth0 DOWN — firewall block",
-        body: "$ ip addr show eth0\neth0: <BROADCAST,MULTICAST> state DOWN\n\nPenyebab: firewall rules salah:\nufw deny from any → terlalu agresif!\nMemblokir SEMUA traffic termasuk loopback!\n\nHarus reset firewall rules dan konfigurasi ulang dengan benar.",
-        theory: "Aturan firewall 'deny from any' tanpa exception akan memblokir seluruh traffic termasuk loopback (127.0.0.1) yang dibutuhkan sistem. Selalu test firewall rules di staging dulu!",
+        icon: "🔀", title: "Core Network Switch — HP Aruba",
+        status: "ok", statusText: "All links UP ✓",
+        body: "HP Aruba Core Switch:\n• 48 port aktif ✓\n• Uptime: 365 hari (!)\n• VLAN terconfig dengan benar\n• Bandwidth: 10Gbps ✓\n\nSwitch dalam kondisi prima.\nPastikan networking service di server juga di-restart!",
+        theory: "Core switch adalah jantung jaringan. Best practice: jangan restart switch saat jam kerja. Selalu koordinasi dengan semua tim sebelum maintenance jaringan.",
+        triggerTerm: false
+      },
+      "monitoring": {
+        icon: "📊", title: "Dashboard Monitoring — Real-time",
+        status: "warn", statusText: "5 service belum optimal",
+        body: "Status Service Kota (Current):\n✓ MySQL Database — Running\n✓ Apache Web — Running\n⚠️ UFW Firewall — Konfigurasi lama\n⚠️ Networking — Perlu restart\n⚠️ SSH — Port default (risiko)\n⚠️ Cron Jobs — Belum optimal\n✓ DNS — Running",
+        theory: "Monitoring dashboard memberikan overview real-time semua service. Tools: Zabbix, Nagios, Grafana + Prometheus. Untuk Linux: systemctl list-units --state=running",
         triggerTerm: true
       },
-      "firewall-cfg": {
-        icon: "🔥", title: "UFW Config — Rules Salah Pasang",
-        status: "err", statusText: "Rules terlalu restriktif",
-        body: "Rules bermasalah yang terpasang:\n  ufw deny from any (SALAH!)\n  ufw deny to any   (SALAH!)\n\nRules yang BENAR seharusnya:\n  ufw allow 80/tcp     (HTTP)\n  ufw allow 443/tcp    (HTTPS)\n  ufw allow 22/tcp     (SSH)\n  ufw limit ssh        (rate limit brute force)\n  ufw deny from [IP hacker]\n\nReset dan pasang ulang!",
-        theory: "UFW rules diproses dari atas ke bawah. 'deny from any' di awal akan memblokir segalanya. Urutan rules penting: taruh yang spesifik (allow) sebelum yang umum (deny).",
-        triggerTerm: true
-      },
-      "recovery-plan": {
-        icon: "📗", title: "Disaster Recovery Plan Kota Netville",
-        status: "ok", statusText: "📋 Panduan Pemulihan Total",
-        body: "EMERGENCY RECOVERY — 30 Menit:\n\n1. ufw reset → reset semua rules\n2. ufw allow 80 → HTTP\n3. ufw allow 22 → SSH\n4. ufw enable → aktifkan\n5. systemctl restart networking\n6. systemctl restart apache2\n7. systemctl restart mysql\n8. systemctl list-units --state=running → verifikasi\n\nTepuk dada — kamu Netville Hero!",
-        theory: "Disaster Recovery Plan (DRP) adalah dokumen prosedur pemulihan saat terjadi bencana IT. DRP yang baik: tertulis jelas, dilatih berkala, dan mudah diikuti dalam kondisi panik sekalipun.",
-        triggerTerm: true
+      "checklist": {
+        icon: "✅", title: "Checklist Deployment Final",
+        status: "ok", statusText: "Panduan langkah demi langkah",
+        body: "CHECKLIST DEPLOYMENT:\n□ ufw reset — reset firewall\n□ ufw allow 80 — izinkan HTTP\n□ systemctl restart networking\n□ systemctl restart apache2\n□ systemctl list-units --state=running\n\nCentang satu per satu!\nJangan skip langkah apapun!",
+        theory: "Checklist deployment mencegah human error. Di production environment, setiap langkah harus dicatat dengan timestamp dan siapa yang melakukan (change management).",
+        triggerTerm: false
       }
     },
 
     objectives: [
-      { id: "reset-fw",      text: "Reset firewall rules yang salah",   cmd: "ufw reset" },
-      { id: "setup-fw",      text: "Konfigurasi firewall dengan benar", cmd: "ufw allow 80" },
-      { id: "restart-net",   text: "Pulihkan network interface",        cmd: "systemctl restart networking" },
-      { id: "restart-web",   text: "Restart semua web services",        cmd: "systemctl restart apache2" },
-      { id: "verify-all",    text: "Verifikasi semua sistem berjalan",  cmd: "systemctl list-units --state=running" }
+      { id: "reset-fw",      text: "Reset konfigurasi firewall",              cmd: "ufw reset" },
+      { id: "allow-http",    text: "Izinkan traffic HTTP",                    cmd: "ufw allow 80" },
+      { id: "restart-net",   text: "Restart networking service",              cmd: "systemctl restart networking" },
+      { id: "restart-apache",text: "Restart Apache web server",               cmd: "systemctl restart apache2" },
+      { id: "check-all",     text: "Verifikasi semua service berjalan",       cmd: "systemctl list-units --state=running" }
     ],
 
     hints: [
-      "Reset firewall dulu: ufw reset — hapus semua rules yang salah.",
-      "Pasang rules yang benar: ufw allow 80, ufw allow 22, ufw enable.",
-      "Lanjut restart services: systemctl restart networking → apache2 → mysql."
+      "Reset firewall dulu: ufw reset, lalu ufw allow 80",
+      "Restart networking: systemctl restart networking",
+      "Cek semua: systemctl list-units --state=running"
     ]
   }
+
 ];

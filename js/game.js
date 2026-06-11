@@ -5,6 +5,8 @@
 let currentLevelIdx = 0;
 let currentLevel    = null;
 let score           = 0;
+let playerName      = 'Andi';
+let playerSchool    = 'SMK TKJ';
 let hintsLeft       = 3;
 let timerSec        = 0;
 let timerHandle     = null;
@@ -59,14 +61,120 @@ function onWorldInteract(type, id) {
 function showMenu() {
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('main-menu').classList.remove('hidden');
+  const cb = document.getElementById('continue-btn');
+  if (cb) cb.style.display = saveExists() ? '' : 'none';
 }
 
 function goMenu() {
   stopTimer();
   World.releasePointer();
-  ['game-screen','lvl-complete'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  ['game-screen','lvl-complete','pause-screen'].forEach(id => document.getElementById(id).classList.add('hidden'));
   document.getElementById('main-menu').classList.remove('hidden');
   document.getElementById('click-to-start').style.display = 'none';
+  // Refresh continue button
+  const cb = document.getElementById('continue-btn');
+  if (cb) cb.style.display = saveExists() ? '' : 'none';
+}
+
+// ── Pause Menu ────────────────────────────
+function showPauseMenu() {
+  stopTimer();
+  document.getElementById('pause-screen').classList.remove('hidden');
+}
+
+function resumeGame() {
+  document.getElementById('pause-screen').classList.add('hidden');
+  startTimer();
+  setTimeout(() => { document.getElementById('c').requestPointerLock(); }, 150);
+}
+
+function exitToMenu() {
+  document.getElementById('pause-screen').classList.add('hidden');
+  goMenu();
+}
+
+// ── Save / Load ───────────────────────────
+const SAVE_KEY = 'netadmin_v1_save';
+
+function saveExists() { return !!localStorage.getItem(SAVE_KEY); }
+
+function saveGame() {
+  const data = {
+    playerName, playerSchool, selectedLocation,
+    currentLevelIdx, score, timerSec,
+    savedAt: new Date().toLocaleString('id-ID')
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  showNotif('💾 Progress tersimpan!');
+  const cb = document.getElementById('continue-btn');
+  if (cb) cb.style.display = '';
+}
+
+function continueSave() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  const s = JSON.parse(raw);
+  playerName        = s.playerName   || 'Andi';
+  playerSchool      = s.playerSchool || 'SMK TKJ';
+  selectedLocation  = s.selectedLocation || 'gov';
+  currentLevelIdx   = s.currentLevelIdx  || 0;
+  score             = s.score   || 0;
+  timerSec          = s.timerSec || 0;
+  document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('game-screen').classList.remove('hidden');
+  World.setLocationTheme(selectedLocation);
+  loadLevel(currentLevelIdx);
+}
+
+// ── Name Input ────────────────────────────
+const AVATARS = ['😊','😎','🤓','😄','🧑‍💻','👨‍🎓','👩‍🎓','🧑‍🎓'];
+function showNameInput() {
+  document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('name-screen').classList.remove('hidden');
+  setTimeout(() => document.getElementById('player-name-input').focus(), 100);
+}
+function hideNameInput() {
+  document.getElementById('name-screen').classList.add('hidden');
+  document.getElementById('main-menu').classList.remove('hidden');
+  document.getElementById('player-name-input').value  = '';
+  document.getElementById('player-school-input').value = '';
+  document.getElementById('name-preview').classList.add('hidden');
+  document.getElementById('name-confirm-btn').disabled = true;
+  document.getElementById('name-confirm-btn').style.opacity = '.4';
+}
+function onNameType() {
+  const name   = document.getElementById('player-name-input').value.trim();
+  const school = document.getElementById('player-school-input').value.trim();
+  const btn    = document.getElementById('name-confirm-btn');
+  const preview = document.getElementById('name-preview');
+  const nicName   = document.getElementById('nic-name');
+  const nicSchool = document.getElementById('nic-school');
+  const avatar    = document.getElementById('name-avatar');
+
+  const valid = name.length >= 2;
+
+  if (valid) {
+    nicName.textContent   = name.toUpperCase();
+    nicSchool.textContent = school || 'SMK TKJ';
+    preview.classList.remove('hidden');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    avatar.textContent = AVATARS[name.charCodeAt(0) % AVATARS.length];
+  } else {
+    preview.classList.add('hidden');
+    btn.disabled = true;
+    btn.style.opacity = '.4';
+    avatar.textContent = '😊';
+  }
+}
+function confirmName() {
+  const name   = document.getElementById('player-name-input').value.trim();
+  const school = document.getElementById('player-school-input').value.trim();
+  if (name.length < 2) return;
+  playerName   = name;
+  playerSchool = school || 'SMK TKJ';
+  document.getElementById('name-screen').classList.add('hidden');
+  showLocationSelect();
 }
 
 function showHowTo()   { document.getElementById('howto-screen').classList.remove('hidden'); }
@@ -74,12 +182,60 @@ function hideHowTo()   { document.getElementById('howto-screen').classList.add('
 function showCredits() { document.getElementById('credits-screen').classList.remove('hidden'); }
 function hideCredits() { document.getElementById('credits-screen').classList.add('hidden'); }
 
+// ── Location Select ───────────────────────
+const LOCATIONS = {
+  gov:    { name: 'Dinas Pemerintahan',   icon: '🏛️', place: 'Kota Netville',           color: '#7c3aed' },
+  campus: { name: 'Kampus Teknik',        icon: '🏫', place: 'Universitas Netville',    color: '#0891b2' },
+  corp:   { name: 'PT Netville Teknologi',icon: '🏢', place: 'Kawasan Industri Netville',color: '#059669' },
+  isp:    { name: 'Netville Fiber ISP',   icon: '📡', place: 'NOC Pusat Netville',      color: '#d97706' },
+};
+let selectedLocation = 'gov';
+
+function showLocationSelect() {
+  document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('location-screen').classList.remove('hidden');
+}
+
+function hideLocationSelect() {
+  document.getElementById('location-screen').classList.add('hidden');
+  document.getElementById('main-menu').classList.remove('hidden');
+}
+
+function selectLocation(locId) {
+  selectedLocation = locId;
+  const loc = LOCATIONS[locId];
+  World.setLocationTheme(locId);
+  document.getElementById('location-screen').classList.add('hidden');
+  showLocationBrief(loc);
+}
+
+function showLocationBrief(loc) {
+  document.getElementById('game-screen').classList.remove('hidden');
+  // Gunakan playerName & playerSchool langsung (sudah tersimpan di confirmName)
+  const n = playerName, s = playerSchool;
+  showDialog([
+    { avatar: '📋', name: 'Surat Pengantar PKL',
+      text: `Dengan ini dinyatakan bahwa ${n} dari ${s}, diterima sebagai siswa PKL di ${loc.name} — ${loc.place}.` },
+    { avatar: loc.icon, name: loc.name,
+      text: `Selamat datang, ${n}! Kami harap kamu siap bekerja keras. Tempat ini tidak pernah sepi tantangan!` },
+    { avatar: '😅', name: `${n} (Kamu)`,
+      text: `Bismillah... siap! Nama saya ${n} dari ${s}. Saya akan buktikan kemampuan saya! 💪` }
+  ], startGame);
+}
+
 // ── Start / Load level ────────────────────
 function startGame() {
   currentLevelIdx = 0;
   score = 0;
   document.getElementById('hud-score').textContent = score;
   document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('game-screen').classList.remove('hidden');
+  // Tampilkan badge lokasi di HUD
+  const loc = LOCATIONS[selectedLocation];
+  if (loc) {
+    const ms = document.getElementById('hud-ms');
+    if (ms) ms.title = `${loc.icon} ${loc.name}`;
+  }
   loadLevel(0);
 }
 
@@ -91,7 +247,7 @@ function loadLevel(idx) {
   document.getElementById('game-screen').classList.remove('hidden');
   document.getElementById('lvl-complete').classList.add('hidden');
   document.getElementById('hud-lv').textContent    = 'Level ' + (idx + 1);
-  document.getElementById('hud-ms').textContent    = currentLevel.mission;
+  document.getElementById('hud-ms').textContent    = applyPlayerVars(currentLevel.mission);
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hint-left').textContent = hintsLeft;
 
@@ -99,38 +255,50 @@ function loadLevel(idx) {
   renderObjectives();
   Terminal.reset();
 
+  // Pintu dikunci sampai player bicara dengan Pak Heri
+  _lobbyGateDone = false;
+  World.setDoorGate(() => {
+    if (!_lobbyGateDone) {
+      showNotif('💬 Bicara dulu dengan Pak Heri sebelum masuk server room!');
+      return false;
+    }
+    return true;
+  });
+
   // Load 3D corridor, door opens → enter server room
   World.loadRoom('lobby', currentLevel, () => {
-    // Door opened! Transition to server room
+    World.releasePointer();
     World.loadRoom('serverroom', currentLevel, null);
-    // Show intro dialog if any after entering
-    const srDef = currentLevel.scenes.serverroom;
-    if (srDef && srDef.dialogOnEnter) {
-      const dlg = currentLevel.dialogs[srDef.dialogOnEnter];
-      if (dlg) setTimeout(() => showDialog(dlg), 800);
-    }
+    setTimeout(() => showNotif('🔍 Temukan Kak Sari! Dekati lalu tekan E untuk bicara.'), 900);
   });
 
   // Show click-to-start overlay
   document.getElementById('click-to-start').style.display = 'flex';
+  setTimeout(() => showNotif('👋 Dekati NPC dan tekan E untuk memulai cerita!'), 1500);
 
-  // Auto-show intro dialog (lobby)
-  const lobbyDef = currentLevel.scenes.lobby;
-  if (lobbyDef && lobbyDef.dialogOnEnter) {
-    const dlg = currentLevel.dialogs[lobbyDef.dialogOnEnter];
-    if (dlg) setTimeout(() => showDialog(dlg), 1200);
-  }
+  // Dialog hanya muncul saat berinteraksi dengan NPC (tekan E)
 
   startTimer();
 }
 
 // ── Character click ───────────────────────
+let _lobbyGateDone = false;
+
 function onCharClick(charId) {
   World.releasePointer();
-  const dlg = currentLevel.dialogs['char_' + charId]
-    || (charId === 'sari' ? currentLevel.dialogs['sari_greet'] : null)
-    || currentLevel.dialogs['intro'];
-  if (dlg) showDialog(dlg);
+  const key = 'char_' + charId.replace(/-/g, '_');
+  const dlg = currentLevel.dialogs[key] || currentLevel.dialogs['intro'];
+  if (!dlg) return;
+
+  // Pak Heri = gate keeper — setelah dialog selesai, pintu server room terbuka
+  const isPakHeri = charId.includes('pak-heri') || charId.includes('pak_heri');
+  const cb = isPakHeri ? () => {
+    _lobbyGateDone = true;
+    showNotif('✅ Sekarang kamu bisa masuk ke server room!');
+    World.setDoorGate(null);   // hapus gate setelah terpenuhi
+  } : null;
+
+  showDialog(dlg, cb);
 }
 
 // ── Item click ────────────────────────────
@@ -143,9 +311,9 @@ function onItemClick(itemId) {
   addScore(50);
 
   document.getElementById('ins-ico').textContent   = item.icon || item.emoji || '🔍';
-  document.getElementById('ins-title').textContent = item.title;
+  document.getElementById('ins-title').textContent = applyPlayerVars(item.title);
   document.getElementById('ins-badge').textContent = item.statusText || item.status || '';
-  document.getElementById('ins-body').textContent  = item.body;
+  document.getElementById('ins-body').textContent  = applyPlayerVars(item.body);
 
   const theory = document.getElementById('ins-theory');
   if (item.theory) {
@@ -179,16 +347,40 @@ function showDialog(lines, callback) {
   renderDialogLine();
 }
 
+function applyPlayerVars(str) {
+  if (!str) return str;
+  // Ganti semua variasi nama dan sekolah di teks dialog
+  return str
+    .replace(/\bAndi\b/gi, playerName)
+    .replace(/\bAndi \(Kamu\)/gi, `${playerName} (Kamu)`)
+    .replace(/SMK TKJ Netville/gi, playerSchool)
+    .replace(/SMK TKJ/gi, playerSchool)
+    .replace(/SMKN 1 Netville/gi, playerSchool);
+}
+
+function gameActive()  { return !document.getElementById('game-screen').classList.contains('hidden'); }
+function isAnyUIOpen() {
+  return ['dialog-box','inspect-box','term-overlay','pause-screen'].some(
+    id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
+}
+
 function renderDialogLine() {
   if (dialogIdx >= dialogQueue.length) {
     document.getElementById('dialog-box').classList.add('hidden');
-    if (dialogCallback) { const cb = dialogCallback; dialogCallback = null; cb(); }
+    if (dialogCallback) {
+      const cb = dialogCallback; dialogCallback = null; cb();
+    } else {
+      // Dialog NPC selesai — otomatis kembali ke mode jalan (re-lock pointer)
+      setTimeout(() => {
+        if (gameActive() && !isAnyUIOpen()) document.getElementById('c').requestPointerLock();
+      }, 200);
+    }
     return;
   }
   const line = dialogQueue[dialogIdx];
   document.getElementById('dlg-ava').textContent = line.avatar || line.who || '👤';
-  document.getElementById('dlg-who').textContent = line.name || '';
-  typeWriter('dlg-txt', line.text);
+  document.getElementById('dlg-who').textContent = applyPlayerVars(line.name || '');
+  typeWriter('dlg-txt', applyPlayerVars(line.text || ''));
 }
 
 function advanceDialog() {
@@ -296,7 +488,7 @@ function levelComplete() {
   const s = String(timerSec % 60).padStart(2, '0');
   const badges = ['🥉 Teknisi Pemula','🥈 Sysadmin Muda','🥇 Network Engineer','🏅 Senior SysAdmin','🏆 Master NetAdmin'];
 
-  document.getElementById('lc-badge-txt').textContent = badges[currentLevelIdx] || '🌟 Selesai';
+  document.getElementById('lc-badge-txt').textContent = `${badges[currentLevelIdx] || '🌟 Selesai'} — ${playerName}`;
   document.getElementById('lc-sc').textContent = score;
   document.getElementById('lc-tm').textContent = m + ':' + s;
   document.getElementById('lc-ht').textContent = (3 - hintsLeft) + 'x';
@@ -314,8 +506,9 @@ function nextLevel() {
   if (currentLevelIdx >= LEVELS.length) {
     document.getElementById('lvl-complete').classList.add('hidden');
     showDialog([
-      { avatar: '🏆', name: 'Selamat!', text: 'Kamu telah menyelesaikan semua 5 level! Kamu adalah Master NetAdmin Netville City!' },
-      { avatar: '🎓', name: 'Pak Kepala', text: 'Luar biasa! Terima kasih sudah menyelamatkan sistem kami berkali-kali!' }
+      { avatar: '🏆', name: 'Selamat!', text: `${playerName} telah menyelesaikan semua 5 level PKL! Kamu adalah Master NetAdmin Netville City!` },
+      { avatar: '🎓', name: 'Pak Heri', text: `Luar biasa, ${playerName}! Dari siswa PKL hari pertama sampai jadi pahlawan kota — kami bangga punya kamu!` },
+      { avatar: '😎', name: 'Kak Sari', text: `Jujur, aku hampir tidak percaya ada siswa PKL sehandal ${playerName}. Kalau sudah lulus, langsung lamar kerja di sini ya! 😄` }
     ], goMenu);
     return;
   }

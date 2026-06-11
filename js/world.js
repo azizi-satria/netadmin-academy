@@ -5,6 +5,7 @@
 const World = (() => {
 
   let scene, camera, renderer, composer, clock;
+  let ambLight, hemiLight;
 
   // ── FPS ──────────────────────────────────────
   let yaw = 0, pitch = 0, pointerLocked = false;
@@ -16,8 +17,63 @@ const World = (() => {
   let roomObjects  = [];
   let interactables = [];
   let animFns      = [];
+  let _doorGate    = null;   // fn() → true = boleh buka, false = blokir
 
   let onInteractCb = null;
+
+  // ── Location themes ───────────────────────────
+  const LOC_THEMES = {
+    gov: {
+      floorBg:'#09091a', floorLine:'rgba(80,60,220,0.32)',
+      wallBg:'#0d0d22', wallLine:'rgba(120,80,255,0.2)',
+      wallColor:0x0d0d22, floorColor:0x8080aa, ceilColor:0x060612,
+      accentCol:0x7c3aed, baseCol:0x06b6d4, doorFrameCol:0x3a1a7a, signCol:0x00ff88,
+      fogCol:0x080818,
+      npcShirts:[0x1a3a7a,0x3d1a7a,0x0a4a30],
+      npcPants: [0x0f1f40,0x1a0d40,0x062a1a],
+      npcSkins: [0xb07040,0x8a5c30,0xb07040],
+      npcHair:  [0x1a0a00,0x111111,0x331100],
+      ambientCol:0xc8d8ff, hemiSky:0xddeeff, hemiGround:0x334466,
+    },
+    campus: {
+      floorBg:'#120e04', floorLine:'rgba(120,90,20,0.38)',
+      wallBg:'#0c1208', wallLine:'rgba(40,140,40,0.2)',
+      wallColor:0x0c1208, floorColor:0x7a6030, ceilColor:0x080e06,
+      accentCol:0x16a34a, baseCol:0xca8a04, doorFrameCol:0x14532d, signCol:0xfbbf24,
+      fogCol:0x060e08,
+      npcShirts:[0x14532d,0x1e4080,0x7c2800],
+      npcPants: [0x0a2a14,0x0f1f40,0x3a1200],
+      npcSkins: [0xb07040,0xc08850,0x8a5c30],
+      npcHair:  [0x111111,0x1a0800,0x221100],
+      ambientCol:0xd8f0c8, hemiSky:0xe8ffe0, hemiGround:0x1a3a1a,
+    },
+    corp: {
+      floorBg:'#0a0a0a', floorLine:'rgba(180,100,20,0.3)',
+      wallBg:'#0c0c0e', wallLine:'rgba(180,100,20,0.18)',
+      wallColor:0x0c0c0e, floorColor:0x606060, ceilColor:0x080808,
+      accentCol:0xd97706, baseCol:0xb91c1c, doorFrameCol:0x7c2d12, signCol:0xf59e0b,
+      fogCol:0x090909,
+      npcShirts:[0x1c1c2a,0x7c2d12,0x1e3a5f],
+      npcPants: [0x111118,0x0c0c0c,0x0f1f40],
+      npcSkins: [0xb07040,0xc08850,0x8a5c30],
+      npcHair:  [0x0a0a0a,0x1a0800,0x111111],
+      ambientCol:0xffeedd, hemiSky:0xfff0dd, hemiGround:0x1a1a1a,
+    },
+    isp: {
+      floorBg:'#001208', floorLine:'rgba(0,200,80,0.32)',
+      wallBg:'#001808', wallLine:'rgba(0,200,80,0.2)',
+      wallColor:0x001808, floorColor:0x1a2a18, ceilColor:0x000a04,
+      accentCol:0x00aa44, baseCol:0x0891b2, doorFrameCol:0x005522, signCol:0x00ff41,
+      fogCol:0x001010,
+      npcShirts:[0x003322,0x00334d,0x1a3a00],
+      npcPants: [0x001a11,0x001a26,0x0d1a00],
+      npcSkins: [0xb07040,0x8a5c30,0xc08850],
+      npcHair:  [0x111111,0x0a0800,0x001a00],
+      ambientCol:0xaaffee, hemiSky:0xccffee, hemiGround:0x002222,
+    },
+  };
+  let locTheme = LOC_THEMES.gov;
+  let _curLocId = 'gov';
 
   // ══════════════════════════════════════════════
   // INIT
@@ -32,7 +88,7 @@ const World = (() => {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
     renderer.toneMapping       = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.5;
     renderer.outputEncoding    = THREE.sRGBEncoding;
 
     scene = new THREE.Scene();
@@ -43,12 +99,14 @@ const World = (() => {
     camera.position.set(0, EYE_H, 8);
     clock = new THREE.Clock();
 
-    scene.add(new THREE.AmbientLight(0x2233aa, 3.5));
+    ambLight  = new THREE.AmbientLight(0xc8d8ff, 2.8);
+    hemiLight = new THREE.HemisphereLight(0xddeeff, 0x334466, 1.2);
+    scene.add(ambLight); scene.add(hemiLight);
 
-    // Bloom post-processing
+    // Bloom — hanya emissive LED yang bloom, karakter tidak
     const rPass = new THREE.RenderPass(scene, camera);
     const bloom = new THREE.UnrealBloomPass(
-      new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.4, 0.35);
+      new THREE.Vector2(innerWidth, innerHeight), 0.35, 0.4, 0.95);
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(rPass);
     composer.addPass(bloom);
@@ -68,15 +126,27 @@ const World = (() => {
   // CONTROLS
   // ══════════════════════════════════════════════
   function setupControls(canvas) {
+    let _pauseOnUnlock = false;
+
     document.addEventListener('click', () => {
       if (isUIOpen() || !gameActive()) return;
       canvas.requestPointerLock();
     });
     document.addEventListener('pointerlockchange', () => {
+      const prev = pointerLocked;
       pointerLocked = document.pointerLockElement === canvas;
-      refreshOverlay();
       const ch = document.getElementById('crosshair');
       if (ch) ch.classList.toggle('hidden', !pointerLocked);
+
+      if (prev && !pointerLocked && _pauseOnUnlock && gameActive()) {
+        _pauseOnUnlock = false;
+        setTimeout(() => {
+          if (typeof showPauseMenu === 'function') showPauseMenu();
+        }, 30);
+        return;
+      }
+      _pauseOnUnlock = false;
+      refreshOverlay();
     });
     document.addEventListener('mousemove', e => {
       if (!pointerLocked) return;
@@ -86,7 +156,22 @@ const World = (() => {
     document.addEventListener('keydown', e => {
       keys[e.code] = true;
       if (e.code === 'KeyE') tryInteract();
-      if (e.code === 'Escape') document.exitPointerLock();
+      if (e.code === 'KeyS') {
+        const pauseEl = document.getElementById('pause-screen');
+        if (pauseEl && !pauseEl.classList.contains('hidden')) {
+          if (typeof saveGame === 'function') saveGame();
+        }
+      }
+      if (e.code === 'Escape') {
+        const pauseEl = document.getElementById('pause-screen');
+        if (pauseEl && !pauseEl.classList.contains('hidden')) {
+          // ESC while paused = resume
+          if (typeof resumeGame === 'function') resumeGame();
+        } else if (document.pointerLockElement) {
+          _pauseOnUnlock = true;
+          document.exitPointerLock();
+        }
+      }
     });
     document.addEventListener('keyup', e => { keys[e.code] = false; });
   }
@@ -96,8 +181,8 @@ const World = (() => {
     if (el) el.style.display = (!pointerLocked && gameActive() && !isUIOpen()) ? 'flex' : 'none';
   }
   function isUIOpen() {
-    return ['dialog-box','inspect-box','term-overlay'].some(
-      id => !document.getElementById(id).classList.contains('hidden'));
+    return ['dialog-box','inspect-box','term-overlay','pause-screen'].some(
+      id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
   }
   function gameActive() {
     return !document.getElementById('game-screen').classList.contains('hidden');
@@ -113,7 +198,7 @@ const World = (() => {
     if (onInteractCb) onInteractCb(n.itype, n.iid);
   }
   function getNear() {
-    let best = null, d = 3.5;
+    let best = null, d = 2.2;
     interactables.forEach(o => {
       const dd = camera.position.distanceTo(o.pos);
       if (dd < d) { d = dd; best = o; }
@@ -207,11 +292,19 @@ const World = (() => {
   function makeFloorTex() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
     const x = c.getContext('2d');
-    x.fillStyle = '#090910'; x.fillRect(0,0,512,512);
-    x.strokeStyle = 'rgba(90,60,200,0.28)'; x.lineWidth = 1.5;
-    for (let i = 0; i <= 512; i += 64) {
-      x.beginPath(); x.moveTo(i,0); x.lineTo(i,512); x.stroke();
-      x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke();
+    x.fillStyle = locTheme.floorBg || '#09091a'; x.fillRect(0,0,512,512);
+    x.strokeStyle = locTheme.floorLine || 'rgba(80,60,200,0.28)'; x.lineWidth = 1.5;
+    if (_curLocId === 'campus') {
+      // wood plank style
+      x.lineWidth = 2;
+      for (let i = 0; i <= 512; i += 48) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
+      x.strokeStyle = 'rgba(80,60,10,0.15)'; x.lineWidth = 0.5;
+      for (let i = 0; i <= 512; i += 8) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
+    } else {
+      for (let i = 0; i <= 512; i += 64) {
+        x.beginPath(); x.moveTo(i,0); x.lineTo(i,512); x.stroke();
+        x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke();
+      }
     }
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6,12);
@@ -221,12 +314,35 @@ const World = (() => {
   function makeWallTex() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
     const x = c.getContext('2d');
-    x.fillStyle = '#0d0d20'; x.fillRect(0,0,512,512);
-    x.strokeStyle = 'rgba(120,80,255,0.18)'; x.lineWidth = 1.5;
-    for (let i = 0; i <= 512; i += 80) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
-    x.fillStyle = 'rgba(150,100,255,0.12)';
-    for (let r = 40; r < 512; r += 80) for (let cc = 30; cc < 512; cc += 120) {
-      x.beginPath(); x.arc(cc,r,3,0,Math.PI*2); x.fill();
+    x.fillStyle = locTheme.wallBg || '#0d0d20'; x.fillRect(0,0,512,512);
+    x.strokeStyle = locTheme.wallLine || 'rgba(120,80,255,0.18)'; x.lineWidth = 1.5;
+    if (_curLocId === 'campus') {
+      // paint stripes
+      for (let i = 0; i <= 512; i += 80) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
+      x.fillStyle = 'rgba(40,160,40,0.07)';
+      for (let r = 40; r < 512; r += 80) for (let cc = 30; cc < 512; cc += 120) {
+        x.beginPath(); x.arc(cc,r,3,0,Math.PI*2); x.fill();
+      }
+    } else if (_curLocId === 'corp') {
+      // horizontal panels
+      for (let i = 0; i <= 512; i += 60) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
+      x.fillStyle = 'rgba(180,100,20,0.08)';
+      for (let r = 30; r < 512; r += 60) for (let cc = 40; cc < 512; cc += 100) {
+        x.fillRect(cc-4,r-1,8,2);
+      }
+    } else if (_curLocId === 'isp') {
+      // matrix green dots
+      for (let i = 0; i <= 512; i += 80) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
+      x.fillStyle = 'rgba(0,200,80,0.12)';
+      for (let r = 20; r < 512; r += 40) for (let cc = 20; cc < 512; cc += 60) {
+        x.beginPath(); x.arc(cc,r,2,0,Math.PI*2); x.fill();
+      }
+    } else {
+      for (let i = 0; i <= 512; i += 80) { x.beginPath(); x.moveTo(0,i); x.lineTo(512,i); x.stroke(); }
+      x.fillStyle = 'rgba(150,100,255,0.12)';
+      for (let r = 40; r < 512; r += 80) for (let cc = 30; cc < 512; cc += 120) {
+        x.beginPath(); x.arc(cc,r,3,0,Math.PI*2); x.fill();
+      }
     }
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3,1);
@@ -252,52 +368,108 @@ const World = (() => {
     const g = new THREE.Group();
     g.position.set(x, y, z);
 
-    const add = (w,h,d, col, emCol, emInt, px,py,pz, ry) => {
+    skinCol = skinCol || 0xd4956a;
+
+    // roughness tinggi supaya tidak terlalu reflektif/bloom
+    const add = (w,h,d, col, emCol, emInt, px,py,pz) => {
       const mat = new THREE.MeshStandardMaterial({
-        color: col, roughness: 0.82,
+        color: col, roughness: 0.95, metalness: 0.0,
         emissive: emCol ? new THREE.Color(emCol) : undefined,
         emissiveIntensity: emInt || 0
       });
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
       mesh.position.set(px||0, py||0, pz||0);
-      if (ry) mesh.rotation.y = ry;
       mesh.castShadow = true;
       g.add(mesh); return mesh;
     };
 
-    skinCol = skinCol || 0xffcc99;
+    const hairCol = locTheme.npcHair ? locTheme.npcHair[0] : 0x1a0a00;
+    const shoeCol = (_curLocId === 'corp') ? 0x222222 : 0x0a0a0a;
+    const tieCol  = (_curLocId === 'gov' || _curLocId === 'corp') ? 0xaa2222 : null;
 
     // Torso
     add(0.52, 0.68, 0.32, shirtCol, null, 0,   0, 1.08, 0);
-    // Collar stripe
-    add(0.54, 0.06, 0.34, 0xffffff, null, 0,   0, 1.39, 0);
+    // Belt
+    add(0.54, 0.06, 0.34, 0x222222, null, 0,   0, 0.74, 0);
+    // Collar
+    add(0.20, 0.10, 0.34, skinCol,  null, 0,   0, 1.40, 0);
+    // Tie (gov/corp only)
+    if (tieCol) add(0.07, 0.36, 0.06, tieCol, null, 0, 0, 1.16, 0.16);
+    // Lab coat lapels (campus)
+    if (_curLocId === 'campus') {
+      add(0.10, 0.50, 0.06, 0xeeeeee, null, 0, -0.14, 1.10, 0.16);
+      add(0.10, 0.50, 0.06, 0xeeeeee, null, 0,  0.14, 1.10, 0.16);
+    }
+    // Pocket (corp/gov)
+    if (_curLocId === 'gov' || _curLocId === 'corp') {
+      add(0.16, 0.12, 0.06, 0xddddcc, null, 0, -0.16, 1.18, 0.16);
+    }
+
     // Head
-    add(0.48, 0.48, 0.48, skinCol,  null, 0,   0, 1.68, 0);
-    // Eyes
-    add(0.10, 0.09, 0.05, 0x222255, 0x4488ff, 0.9,  -0.13, 1.70, 0.24);
-    add(0.10, 0.09, 0.05, 0x222255, 0x4488ff, 0.9,   0.13, 1.70, 0.24);
+    add(0.48, 0.50, 0.48, skinCol,  null, 0,   0, 1.70, 0);
+    // Jaw / chin area slightly wider
+    add(0.46, 0.14, 0.44, skinCol,  null, 0,   0, 1.49, 0);
+    // Eyes — slightly larger, more expressive
+    add(0.11, 0.10, 0.05, 0x0a0a22, 0x2255cc, 0.5, -0.12, 1.72, 0.24);
+    add(0.11, 0.10, 0.05, 0x0a0a22, 0x2255cc, 0.5,  0.12, 1.72, 0.24);
+    // Eye whites
+    add(0.13, 0.12, 0.04, 0xffffff, null, 0,  -0.12, 1.72, 0.23);
+    add(0.13, 0.12, 0.04, 0xffffff, null, 0,   0.12, 1.72, 0.23);
+    // Eyebrows
+    add(0.13, 0.04, 0.03, hairCol,  null, 0,  -0.12, 1.82, 0.24);
+    add(0.13, 0.04, 0.03, hairCol,  null, 0,   0.12, 1.82, 0.24);
     // Nose
-    add(0.05, 0.04, 0.05, skinCol,  null, 0,   0,   1.63, 0.25);
-    // Smile
-    add(0.18, 0.03, 0.04, 0x995533, null, 0,   0,   1.56, 0.24);
-    // Hair
-    add(0.50, 0.10, 0.50, 0x331100, null, 0,   0,   1.92, 0);
-    // Left arm
-    add(0.22, 0.60, 0.28, shirtCol, null, 0,  -0.40, 1.05, 0);
+    add(0.06, 0.05, 0.06, skinCol,  null, 0,   0,   1.63, 0.25);
+    // Mouth
+    add(0.16, 0.04, 0.04, 0x662211, null, 0,   0,   1.55, 0.24);
+    // Ears
+    add(0.04, 0.12, 0.12, skinCol,  null, 0,  -0.26, 1.70, 0);
+    add(0.04, 0.12, 0.12, skinCol,  null, 0,   0.26, 1.70, 0);
+    // Hair top
+    add(0.52, 0.14, 0.52, hairCol,  null, 0,   0, 1.96, -0.02);
+    // Hair side/back
+    add(0.54, 0.30, 0.12, hairCol,  null, 0,   0, 1.82, -0.22);
+    add(0.16, 0.30, 0.50, hairCol,  null, 0,  -0.25, 1.82, -0.02);
+    add(0.16, 0.30, 0.50, hairCol,  null, 0,   0.25, 1.82, -0.02);
+
+    // Neck
+    add(0.20, 0.12, 0.20, skinCol,  null, 0,   0, 1.44, 0);
+
+    // Left arm (upper)
+    add(0.22, 0.38, 0.28, shirtCol, null, 0,  -0.40, 1.18, 0);
+    // Left elbow
+    add(0.22, 0.10, 0.28, skinCol,  null, 0,  -0.40, 0.98, 0);
+    // Left forearm
+    add(0.20, 0.28, 0.26, shirtCol, null, 0,  -0.40, 0.83, 0);
     // Left hand
-    add(0.20, 0.18, 0.20, skinCol,  null, 0,  -0.40, 0.71, 0);
-    // Right arm
-    add(0.22, 0.60, 0.28, shirtCol, null, 0,   0.40, 1.05, 0);
+    add(0.20, 0.20, 0.20, skinCol,  null, 0,  -0.40, 0.67, 0.02);
+
+    // Right arm (upper)
+    add(0.22, 0.38, 0.28, shirtCol, null, 0,   0.40, 1.18, 0);
+    // Right elbow
+    add(0.22, 0.10, 0.28, skinCol,  null, 0,   0.40, 0.98, 0);
+    // Right forearm
+    add(0.20, 0.28, 0.26, shirtCol, null, 0,   0.40, 0.83, 0);
     // Right hand
-    add(0.20, 0.18, 0.20, skinCol,  null, 0,   0.40, 0.71, 0);
-    // Left leg
-    add(0.23, 0.64, 0.29, pantCol,  null, 0,  -0.14, 0.30, 0);
+    add(0.20, 0.20, 0.20, skinCol,  null, 0,   0.40, 0.67, 0.02);
+
+    // Left thigh
+    add(0.24, 0.36, 0.30, pantCol,  null, 0,  -0.14, 0.50, 0);
+    // Left knee
+    add(0.22, 0.10, 0.28, pantCol,  null, 0,  -0.14, 0.31, 0);
+    // Left shin
+    add(0.22, 0.26, 0.28, pantCol,  null, 0,  -0.14, 0.17, 0);
     // Left shoe
-    add(0.23, 0.10, 0.32, 0x222222, null, 0,  -0.14, -0.03, 0.03);
-    // Right leg
-    add(0.23, 0.64, 0.29, pantCol,  null, 0,   0.14, 0.30, 0);
+    add(0.24, 0.11, 0.34, shoeCol,  null, 0,  -0.14, 0.01, 0.04);
+
+    // Right thigh
+    add(0.24, 0.36, 0.30, pantCol,  null, 0,   0.14, 0.50, 0);
+    // Right knee
+    add(0.22, 0.10, 0.28, pantCol,  null, 0,   0.14, 0.31, 0);
+    // Right shin
+    add(0.22, 0.26, 0.28, pantCol,  null, 0,   0.14, 0.17, 0);
     // Right shoe
-    add(0.23, 0.10, 0.32, 0x222222, null, 0,   0.14, -0.03, 0.03);
+    add(0.24, 0.11, 0.34, shoeCol,  null, 0,   0.14, 0.01, 0.04);
 
     // Name tag floating above head
     if (name) {
@@ -328,68 +500,55 @@ const World = (() => {
 
     // Chassis utama
     const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 3.8, 1.0),
-      new THREE.MeshStandardMaterial({ color: 0x0c0c1e, roughness: 0.35, metalness: 0.85 }));
-    body.position.y = 1.9; body.castShadow = true;
-    g.add(body);
+      new THREE.MeshStandardMaterial({ color: 0x0c0c1e, roughness: 0.4, metalness: 0.8 }));
+    body.position.y = 1.9; body.castShadow = true; g.add(body);
 
     // Frame kiri kanan
-    [-0.88, 0.88].forEach(xf => {
+    [-0.87, 0.87].forEach(xf => {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 3.8, 1.05),
         new THREE.MeshStandardMaterial({ color: 0x1a1a3a, roughness: 0.5, metalness: 0.9 }));
       rail.position.set(xf, 1.9, 0); g.add(rail);
     });
 
-    // Kaki
-    [[-0.6,0.6],[0.6,0.6],[-0.6,-0.4],[0.6,-0.4]].forEach(([fx,fz]) => {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12),
-        new THREE.MeshStandardMaterial({ color: 0x333355, roughness: 0.5, metalness: 0.8 }));
-      leg.position.set(fx, 0.06, fz); g.add(leg);
-    });
+    // Server units + LEDs (tanpa PointLight per LED — hemat GPU)
+    const unitCols = [0x00ff41, 0x06b6d4, 0x00ff41, 0xf59e0b, 0x10b981,
+                      0xff4444, 0x06b6d4, 0x00ff41, 0xa855f7, 0x00ff41];
+    const leds = [], bars = [];
+    for (let i = 0; i < 8; i++) {
+      const yy = 0.25 + i * 0.44;
+      const lc = unitCols[i % unitCols.length];
 
-    // Server units + LED + blinkbox
-    const unitCols = [0x00ff41,0x06b6d4,0x00ff41,0xf59e0b,0x10b981,0xff4444,0x06b6d4,0x00ff41,0xa855f7,0x00ff41];
-    for (let i = 0; i < 10; i++) {
-      const yy = 0.22 + i * 0.36;
-      const lc = unitCols[i];
-
-      // Unit plate
-      const unit = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.30, 0.88),
-        new THREE.MeshStandardMaterial({ color: i%2===0?0x111128:0x0e0e22, roughness: 0.6, metalness: 0.5 }));
+      const unit = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.38, 0.88),
+        new THREE.MeshStandardMaterial({ color: i%2===0 ? 0x111128 : 0x0d0d20, roughness: 0.7, metalness: 0.4 }));
       unit.position.set(0, yy, 0); g.add(unit);
 
-      // LED dot
-      const led = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, 0.065),
-        new THREE.MeshStandardMaterial({ color: lc, emissive: new THREE.Color(lc), emissiveIntensity: 3.5 }));
-      led.position.set(-0.74, yy, 0.45); g.add(led);
+      const led = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.06),
+        new THREE.MeshStandardMaterial({ color: lc, emissive: new THREE.Color(lc), emissiveIntensity: 4 }));
+      led.position.set(-0.72, yy, 0.45); g.add(led); leds.push({ m: led, c: lc });
 
-      // Activity bar strip
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, 0.03),
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.04, 0.03),
         new THREE.MeshStandardMaterial({ color: lc, emissive: new THREE.Color(lc), emissiveIntensity: 2 }));
-      bar.position.set(-0.55, yy, 0.45); g.add(bar);
-
-      // Slot garis dekoratif
-      const slot = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.04, 0.03),
-        new THREE.MeshStandardMaterial({ color: 0x333355, roughness: 0.8 }));
-      slot.position.set(0.18, yy, 0.45); g.add(slot);
-
-      // Point light per LED
-      const lgl = new THREE.PointLight(lc, 0.5, 0.9);
-      lgl.position.set(x - 0.74 * Math.cos(rotY||0), yy, z + 0.45); addR(lgl);
-
-      const spd = 0.5 + Math.random() * 2.5, off = Math.random() * Math.PI * 2;
-      animFns.push(t => {
-        const v = 1.5 + Math.sin(t * spd + off) * 1.5;
-        led.material.emissiveIntensity = v;
-        bar.material.emissiveIntensity = v * 0.5;
-        lgl.intensity = 0.25 + Math.sin(t * spd + off) * 0.25;
-      });
+      bar.position.set(-0.52, yy, 0.45); g.add(bar); bars.push(bar);
     }
 
-    // Top panel glow strip
-    const topStrip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, 0.9),
-      new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: new THREE.Color(0x7c3aed), emissiveIntensity: 2 }));
-    topStrip.position.set(0, 3.83, 0); g.add(topStrip);
-    ptLight(0x7c3aed, 1.5, 2.5, x, 3.9, z);
+    // Top glow strip
+    const topStrip = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.9),
+      new THREE.MeshStandardMaterial({ color: 0x5522aa, emissive: new THREE.Color(0x5522aa), emissiveIntensity: 3 }));
+    topStrip.position.set(0, 3.82, 0); g.add(topStrip);
+
+    // SATU PointLight per rack (bukan per LED) — hemat drastis
+    const rackLight = new THREE.PointLight(0x3311aa, 1.0, 3.5);
+    rackLight.position.set(x, 2.0, z); addR(rackLight);
+
+    // Satu animFn per rack (bukan per LED)
+    const off = Math.random() * Math.PI * 2;
+    animFns.push(t => {
+      leds.forEach((ld, i) => {
+        const v = 2.5 + Math.sin(t * (1 + i * 0.3) + off) * 2;
+        ld.m.material.emissiveIntensity = v;
+        bars[i].material.emissiveIntensity = v * 0.4;
+      });
+    });
 
     addR(g);
   }
@@ -535,9 +694,10 @@ const World = (() => {
   // ══════════════════════════════════════════════
   function loadCorridor(levelData, doorCb) {
     clearRoom();
-    const W=6, H=4.2, L=24;
+    const dimMap = {gov:{W:6,H:4.5,L:22},campus:{W:9,H:3.6,L:18},corp:{W:8,H:4.5,L:20},isp:{W:6,H:4.0,L:20}};
+    const {W,H,L} = dimMap[_curLocId] || {W:6,H:4.2,L:24};
     currentRoom = { bounds: { x0:-W/2, x1:W/2, z0:-L/2, z1:L/2 } };
-    camera.position.set(0, EYE_H, 8); yaw = Math.PI; pitch = 0;
+    camera.position.set(0, EYE_H, L/2-1.5); yaw = Math.PI; pitch = 0;
 
     const flTex = makeFloorTex();
     const wlTex = makeWallTex();
@@ -565,39 +725,38 @@ const World = (() => {
       const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),wl); m.position.set(x,y,z); addR(m);
     });
 
-    // Ceiling lights
-    [-7.5,-3.5,0,3.5,7.5].forEach(z => {
-      const s=mkBox(0.2,0.05,1.1, 0xffffff,0.1,0, 0xccddff,5);
+    // Ceiling lights — koridor terang
+    [-L/3.5, 0, L/3.5].forEach(z => {
+      const s=mkBox(0.2,0.05,1.1, 0xffffff,0.05,0, 0xeef5ff,4);
       s.position.set(0,H-0.03,z); addR(s);
-      spot(0xaabbff,12,18, 0,H-0.1,z, 0,0,z);
-      ptLight(0x6677cc,1.2,8, 0,0.5,z);
+      spot(0xffffff, 18, 18, 0, H-0.1, z, 0, 0, z);
     });
+    addR(new THREE.PointLight(0xaabbff, 2.5, Math.max(28,L*1.5))).position.set(0, 2, 0);
 
     // Wall accent strips
-    [-7,-3.5,0,3.5,7].forEach(z => {
+    [-L/3, -L/6, 0, L/6, L/3].forEach(z => {
       [-W/2+0.08,W/2-0.08].forEach(x => {
-        const s=mkBox(0.03,1.6,0.03, 0x7c3aed,0.1,0, 0x7c3aed,5);
+        const s=mkBox(0.03,1.6,0.03, locTheme.accentCol,0.1,0, locTheme.accentCol,5);
         s.position.set(x,1.1,z); addR(s);
       });
     });
 
     // Baseboard glow
     [-W/2+0.04,W/2-0.04].forEach(x => {
-      const b=mkBox(0.03,0.06,L, 0x06b6d4,0.1,0, 0x06b6d4,3.5);
+      const b=mkBox(0.03,0.06,L, locTheme.baseCol,0.1,0, locTheme.baseCol,3.5);
       b.position.set(x,0.03,0); addR(b);
     });
 
     // NPCs
     const lobby = levelData.scenes.lobby;
-    const npcColors = [
-      { shirt: 0x2563eb, pant: 0x1e3a5f, skin: 0xffcc99 },
-      { shirt: 0x7c3aed, pant: 0x2d1b69, skin: 0xd4a574 },
-      { shirt: 0x059669, pant: 0x064e3b, skin: 0xffcc99 },
-    ];
+    const npcColors = locTheme.npcShirts.map((s,i) => ({
+      shirt: s, pant: locTheme.npcPants[i], skin: locTheme.npcSkins[i]
+    }));
     if (lobby.chars) {
       lobby.chars.forEach((ch, i) => {
         const nc = npcColors[i % npcColors.length];
-        const cx = -1.5 + i * 1.5, cz = 4 - i * 1.5;
+        const cx = (i - (lobby.chars.length-1)/2) * 2.2;
+        const cz = L * 0.05 - i * 2.2;
         makeNPC(cx, 0, cz, nc.shirt, nc.pant, nc.skin, ch.name);
         interactables.push({
           pos: new THREE.Vector3(cx, EYE_H, cz),
@@ -607,29 +766,255 @@ const World = (() => {
       });
     }
 
-    // Decorative planters / benches
-    buildLobbyProps();
-
+    buildLobbyDeco(W, H, L);
     buildDoor(DW, DH, L, doorCb);
     showLoc(lobby.label || 'Lobby Netville');
   }
 
-  function buildLobbyProps() {
-    // Bench kiri kanan
-    [-2, 2].forEach(x => {
-      const bench = mkBox(0.45, 0.22, 1.4, 0x3a2010, 0.8, 0.1);
-      bench.position.set(x, 0.11, 2); addR(bench);
-      const leg1 = mkBox(0.08, 0.22, 0.08, 0x2a1808, 0.9, 0.1);
-      leg1.position.set(x-0.17, 0.11, 1.4); addR(leg1);
-      const leg2 = leg1.clone(); leg2.position.set(x+0.17, 0.11, 1.4); addR(leg2);
-      const leg3 = leg1.clone(); leg3.position.set(x-0.17, 0.11, 2.6); addR(leg3);
-      const leg4 = leg1.clone(); leg4.position.set(x+0.17, 0.11, 2.6); addR(leg4);
-    });
+  function buildLobbyDeco(W, H, L) {
+    if (_curLocId === 'campus') {
+      // ── KAMPUS: wooden benches, bulletin board, plants, lockers ──
+      // Wooden benches along walls
+      [-2.5, 2.5].forEach(x => {
+        const bench = mkBox(0.40, 0.20, 1.6, 0x5a3a10, 0.85, 0.05);
+        bench.position.set(x, 0.10, 2.5); addR(bench);
+        const seat = mkBox(0.44, 0.06, 1.64, 0x7a5020, 0.7, 0);
+        seat.position.set(x, 0.23, 2.5); addR(seat);
+        // legs
+        [[-0.17,-0.8],[0.17,-0.8],[-0.17,0.8],[0.17,0.8]].forEach(([ox,oz])=>{
+          const leg = mkBox(0.06,0.20,0.06,0x3a2008,0.9,0);
+          leg.position.set(x+ox,0.10,2.5+oz); addR(leg);
+        });
+      });
+      // Bulletin board on back wall
+      const board = mkBox(2.4, 1.5, 0.08, 0x8b5e1a, 0.9, 0);
+      board.position.set(0, 1.9, L/2-0.1); addR(board);
+      const cork = mkBox(2.2, 1.3, 0.05, 0xc4862a, 0.95, 0);
+      cork.position.set(0, 1.9, L/2-0.06); addR(cork);
+      // Paper notices on board
+      [[-.7,2.1],[.2,2.3],[-0.3,1.7],[.6,1.8],[-0.8,1.6]].forEach(([bx,by])=>{
+        const paper = mkBox(0.5+Math.random()*0.4, 0.35+Math.random()*0.2, 0.03,
+          [0xffeecc,0xccffcc,0xffd0d0,0xccddff][Math.floor(Math.random()*4)], 0.95, 0);
+        paper.position.set(bx, by, L/2-0.03); addR(paper);
+      });
+      // Plants in corners
+      [[W/2-0.5, L/2-1],[W/2-0.5,-1]].forEach(([px,pz])=>{
+        const pot = mkBox(0.28,0.35,0.28,0x663300,0.9,0);
+        pot.position.set(-px,0.17,pz); addR(pot);
+        const stem = mkBox(0.08,0.6,0.08,0x225500,0.95,0);
+        stem.position.set(-px,0.65,pz); addR(stem);
+        const bush = mkBox(0.45,0.45,0.45,0x1a6600,0.9,0);
+        bush.position.set(-px,1.0,pz); addR(bush);
+        const bush2 = mkBox(0.30,0.30,0.30,0x228800,0.9,0);
+        bush2.position.set(-px+0.1,1.2,pz+0.1); addR(bush2);
+      });
+      // School banner strip
+      const banner = mkBox(W-0.5, 0.28, 0.06, 0x1a6600, 0.5, 0, 0x22aa00, 0.8);
+      banner.position.set(0, H-0.5, L/2-0.08); addR(banner);
+      // Lockers (row of 5 small boxes on one side)
+      for (let li=0; li<5; li++) {
+        const lock = mkBox(0.40,0.90,0.35,0x334466,0.7,0.1);
+        lock.position.set(W/2-0.20, 0.45, -L/2+1.0+li*0.9); addR(lock);
+        const hdl = mkBox(0.04,0.10,0.04,0xaaaacc,0.4,0.5);
+        hdl.position.set(W/2-0.04, 0.45, -L/2+1.0+li*0.9+0.1); addR(hdl);
+      }
+      // Direction sign
+      const sign = mkBox(0.7,0.25,0.06, 0x0a2a0a, 0.5, 0.2, 0x22cc44, 1.5);
+      sign.position.set(0, 2.8, L/2-0.07); addR(sign);
+      ptLight(0x22cc44, 0.8, 1.5, 0, 2.9, L/2-0.5);
 
-    // Tanda arah
-    const sign = mkBox(0.7, 0.25, 0.06, 0x0a1122, 0.5, 0.2, 0x06b6d4, 1.5);
-    sign.position.set(0, 2.8, 11.93); addR(sign);
-    ptLight(0x06b6d4, 1, 1.5, 0, 2.9, 11.5);
+    } else if (_curLocId === 'corp') {
+      // ── PERUSAHAAN: sleek reception, modern chairs, glass panels ──
+      // Reception counter
+      const desk = mkBox(2.2, 0.82, 0.7, 0x0a0a0a, 0.3, 0.6);
+      desk.position.set(0, 0.41, 4.5); addR(desk);
+      const deskTop = mkBox(2.4, 0.06, 0.8, 0x1a1a1a, 0.1, 0.7);
+      deskTop.position.set(0, 0.85, 4.5); addR(deskTop);
+      // Orange accent stripe on desk
+      const stripe = mkBox(2.2, 0.06, 0.08, 0xd97706, 0.1, 0, 0xd97706, 2.0);
+      stripe.position.set(0, 0.62, 4.87); addR(stripe);
+      ptLight(0xd97706, 1.5, 2.5, 0, 0.8, 4.5);
+      // Modern chairs
+      [-1.2, 1.2].forEach(x=>{
+        const seat = mkBox(0.45,0.08,0.45,0x111111,0.3,0.4);
+        seat.position.set(x,0.42,2.5); addR(seat);
+        const back = mkBox(0.45,0.50,0.06,0x111111,0.3,0.4);
+        back.position.set(x,0.67,2.26); addR(back);
+        const base = mkBox(0.08,0.42,0.08,0x333333,0.2,0.6);
+        base.position.set(x,0.21,2.5); addR(base);
+      });
+      // Glass partitions
+      [-2.4,2.4].forEach(x=>{
+        const glass = mkBox(0.04,1.8,1.6,0x88aacc,0.05,0.0);
+        glass.position.set(x,0.90,3.5); addR(glass);
+        const frame = mkBox(0.06,1.85,0.06,0x333333,0.3,0.5);
+        frame.position.set(x,0.92,3.5); addR(frame);
+      });
+      // Company logo/art on back wall
+      const logo = mkBox(1.2, 0.8, 0.08, 0x0a0a0a, 0.5, 0, 0xd97706, 1.5);
+      logo.position.set(0, 2.4, L/2-0.1); addR(logo);
+      ptLight(0xd97706, 1.5, 2.5, 0, 2.5, L/2-0.5);
+      // Floor direction strip
+      const strip = mkBox(0.08,0.02,4.0,0xd97706,0.1,0,0xd97706,1.5);
+      strip.position.set(0,0.01,1.5); addR(strip);
+      // Direction sign
+      const sign = mkBox(0.7,0.25,0.06, 0x0a0808, 0.5, 0.2, 0xf59e0b, 1.5);
+      sign.position.set(0, 2.8, L/2-0.07); addR(sign);
+      ptLight(0xf59e0b, 0.8, 1.5, 0, 2.9, L/2-0.5);
+
+    } else if (_curLocId === 'isp') {
+      // ── ISP/NOC: monitoring screens on wall, status panels, equipment ──
+      // Wall of monitoring screens (back wall)
+      for (let sx=-1.8; sx<=1.8; sx+=1.2) {
+        for (let sy=1.4; sy<=2.6; sy+=1.0) {
+          const scr = mkBox(1.0,0.8,0.08,0x001a08,0.3,0,0x00aa44,0.6);
+          scr.position.set(sx,sy,L/2-0.12); addR(scr);
+          // screen content lines
+          for (let li=0; li<4; li++) {
+            const col = [0x00ff88,0x00aaff,0xffaa00,0xff4444][li];
+            const ln = mkBox(0.6+Math.random()*0.3,0.06,0.03,col,0.1,0,col,3.0);
+            ln.position.set(sx-0.1+Math.random()*0.2,sy-0.25+li*0.16,L/2-0.07); addR(ln);
+          }
+          ptLight(0x00aa44,0.5,2.0,sx,sy,L/2-0.5);
+        }
+      }
+      // NOC desk (long console)
+      const desk = mkBox(4.5,0.78,0.8,0x002208,0.6,0.3);
+      desk.position.set(0,0.39,2.0); addR(desk);
+      const deskTop = mkBox(4.7,0.05,0.85,0x001a06,0.2,0.4);
+      deskTop.position.set(0,0.80,2.0); addR(deskTop);
+      // Small monitors on desk
+      [-1.5,0,1.5].forEach(dx=>{
+        const mon = mkBox(0.8,0.6,0.06,0x001a08,0.3,0,0x00cc55,0.5);
+        mon.position.set(dx,1.16,1.66); addR(mon);
+        const stand = mkBox(0.06,0.3,0.08,0x111111,0.5,0.4);
+        stand.position.set(dx,0.96,1.70); addR(stand);
+      });
+      ptLight(0x00cc55,2.0,4.0,0,1.5,2.0);
+      // Status board sign
+      const sign = mkBox(1.2,0.28,0.06, 0x001208, 0.5, 0.2, 0x00ff41, 2.0);
+      sign.position.set(0, 2.8, L/2-0.07); addR(sign);
+      ptLight(0x00ff41, 1.0, 1.5, 0, 2.9, L/2-0.5);
+      // Cable runs on floor
+      [-1.5,1.5].forEach(cx=>{
+        const cable = mkBox(0.05,0.03,8,0x002208,0.9,0,0x00aa44,0.3);
+        cable.position.set(cx,0.01,0); addR(cable);
+      });
+
+    } else {
+      // ── GOV (default): formal reception, plants, government emblem ──
+      // Reception desk
+      const desk = mkBox(2.0,0.78,0.7,0x1a0a2a,0.7,0.1);
+      desk.position.set(0,0.39,4.5); addR(desk);
+      const deskTop = mkBox(2.2,0.06,0.75,0x2a1040,0.5,0.15,0x7c3aed,0.4);
+      deskTop.position.set(0,0.80,4.5); addR(deskTop);
+      ptLight(0x7c3aed,1.2,2.5,0,0.9,4.5);
+      // Formal bench seating
+      [-2,2].forEach(x=>{
+        const bench = mkBox(0.42,0.22,1.5,0x1a0a2a,0.8,0.1);
+        bench.position.set(x,0.11,2.0); addR(bench);
+        const pad = mkBox(0.42,0.08,1.5,0x3a1060,0.7,0);
+        pad.position.set(x,0.26,2.0); addR(pad);
+      });
+      // Tall plants
+      [-2.3,2.3].forEach(x=>{
+        const pot = mkBox(0.30,0.38,0.30,0x2a1040,0.8,0);
+        pot.position.set(x,0.19,L/2-1.2); addR(pot);
+        const stem1 = mkBox(0.06,0.9,0.06,0x114400,0.9,0);
+        stem1.position.set(x,0.85,L/2-1.2); addR(stem1);
+        const stem2 = mkBox(0.06,0.7,0.06,0x114400,0.9,0);
+        stem2.position.set(x+0.12,0.75,L/2-1.2+0.1); addR(stem2);
+        [[-0.1,1.3,0],[0.18,1.1,0.1],[0,1.5,-0.1]].forEach(([ox,oy,oz])=>{
+          const lf = mkBox(0.28,0.10,0.20,0x1a6600,0.9,0);
+          lf.position.set(x+ox,oy,L/2-1.2+oz); addR(lf);
+          lf.rotation.z = (ox>0?-1:1)*0.5;
+        });
+      });
+      // Government emblem on back wall
+      const emblem = mkBox(1.0,1.0,0.06,0x0f0828,0.5,0,0x7c3aed,0.8);
+      emblem.position.set(0,2.2,L/2-0.1); addR(emblem);
+      const ring = mkBox(0.9,0.9,0.04,0x1a0a40,0.5,0,0x06b6d4,1.2);
+      ring.position.set(0,2.2,L/2-0.06); addR(ring);
+      ptLight(0x7c3aed,1.5,2.0,0,2.5,L/2-0.5);
+      // Direction sign
+      const sign = mkBox(0.7,0.25,0.06, 0x0a1122, 0.5, 0.2, 0x06b6d4, 1.5);
+      sign.position.set(0, 2.8, L/2-0.07); addR(sign);
+      ptLight(0x06b6d4, 1, 1.5, 0, 2.9, L/2-0.5);
+    }
+  }
+
+  function buildSRDeco(W, H, L) {
+    if (_curLocId === 'campus') {
+      // Whiteboard on end wall
+      const wb = mkBox(3.0, 1.6, 0.06, 0xf0f0f0, 0.95, 0);
+      wb.position.set(0, 2.0, L/2-0.12); addR(wb);
+      const frame = mkBox(3.1, 1.7, 0.04, 0x553311, 0.8, 0);
+      frame.position.set(0, 2.0, L/2-0.14); addR(frame);
+      // Writing on whiteboard (colored lines)
+      [[0x2244cc,0.6,2.3],[0x22aa44,0.0,2.0],[0xcc4422,-0.5,1.7]].forEach(([col,bx,by])=>{
+        const wr = mkBox(0.8+Math.random()*0.8,0.06,0.03,col,0.1,0,col,2.0);
+        wr.position.set(bx+Math.random()*0.3,by,L/2-0.08); addR(wr);
+      });
+      ptLight(0xffffff,2.0,5.0,0,2.5,L/2-1.0);
+      // Network diagram poster
+      const poster = mkBox(1.2,0.9,0.04,0xeeeeff,0.95,0);
+      poster.position.set(-W/2+0.08,2.0,3); poster.rotation.y=Math.PI/2; addR(poster);
+
+    } else if (_curLocId === 'corp') {
+      // Central workstation island (management console in middle)
+      const island = mkBox(4.0,0.82,1.4,0x0c0c0c,0.3,0.5);
+      island.position.set(0,0.41,0); addR(island);
+      const islandTop = mkBox(4.2,0.06,1.5,0x1a1a1a,0.1,0.6);
+      islandTop.position.set(0,0.85,0); addR(islandTop);
+      // Monitors on island
+      [-1.4,0,1.4].forEach(dx=>{
+        const mon = mkBox(0.9,0.65,0.05,0x050505,0.2,0,0xd97706,0.4);
+        mon.position.set(dx,1.22,-0.5); addR(mon);
+        const stand = mkBox(0.06,0.3,0.08,0x222222,0.5,0.4);
+        stand.position.set(dx,1.01,-0.48); addR(stand);
+        // Screen content
+        for (let li=0;li<3;li++) {
+          const ln = mkBox(0.5+Math.random()*0.3,0.07,0.03,
+            [0xd97706,0xffffff,0x22aaff][li],0.1,0,[0xd97706,0xffffff,0x22aaff][li],2.5);
+          ln.position.set(dx-0.1+Math.random()*0.2,1.14+li*0.13,-0.47); addR(ln);
+        }
+      });
+      ptLight(0xd97706,2.0,5.0,0,1.5,0);
+      // Chairs around island
+      [[-2.2,0,0],[2.2,0,Math.PI],[0,-0.7,Math.PI*0.5],[0,0.7,-Math.PI*0.5]].forEach(([cx,cz,ry])=>{
+        const seat = mkBox(0.44,0.07,0.44,0x111111,0.3,0.4);
+        seat.position.set(cx,0.44,cz); seat.rotation.y=ry; addR(seat);
+        const back = mkBox(0.44,0.48,0.06,0x111111,0.3,0.4);
+        back.position.set(cx,0.68,cz+(Math.abs(cz)>0.1?Math.sign(cz)*0.22:0.22*Math.cos(ry))); back.rotation.y=ry; addR(back);
+      });
+
+    } else if (_curLocId === 'isp') {
+      // Big network topology display on end wall
+      const disp = mkBox(W*0.7, 2.2, 0.1, 0x001a08, 0.3, 0, 0x00aa44, 0.3);
+      disp.position.set(0, 1.8, L/2-0.14); addR(disp);
+      // Network nodes
+      [[0,1.8],[-1.2,2.2],[1.2,2.2],[-1.8,1.5],[1.8,1.5],[0,1.3]].forEach(([nx,ny])=>{
+        const node = mkBox(0.18,0.18,0.06,0x00ff88,0.1,0,0x00ff88,3.0);
+        node.position.set(nx,ny,L/2-0.08); addR(node);
+      });
+      // Connection lines (slim boxes)
+      [[0,2.0,0.6,0.06],[0.6,2.0,0.6,0.06],[-0.6,1.9,0.6,0.06]].forEach(([nx,ny,nw,nh])=>{
+        const line = mkBox(nw,nh,0.03,0x00cc66,0.1,0,0x00cc66,2.0);
+        line.position.set(nx,ny,L/2-0.07); addR(line);
+      });
+      ptLight(0x00aa44,2.0,6.0,0,2.0,L/2-1.0);
+      // Rows of NOC workstations (two rows)
+      [-3.5,3.5].forEach(nz=>{
+        const desk = mkBox(W*0.6,0.75,0.8,0x001808,0.6,0.2);
+        desk.position.set(0,0.37,nz); addR(desk);
+        for (let dx=-2;dx<=2;dx+=2) {
+          const mon = mkBox(0.7,0.55,0.05,0x001008,0.2,0,0x00cc55,0.4);
+          mon.position.set(dx,1.05,nz+(nz>0?-0.48:0.48)); addR(mon);
+          ptLight(0x00cc55,0.4,1.5,dx,1.2,nz+(nz>0?-0.5:0.5));
+        }
+      });
+    }
+    // gov = standard, no extras (just the racks)
   }
 
   // ══════════════════════════════════════════════
@@ -640,16 +1025,16 @@ const World = (() => {
 
     // Door frame
     [[-DW/2-0.06,DH/2],[DW/2+0.06,DH/2]].forEach(([x,y]) => {
-      const f=mkBox(0.12,DH,0.28, 0x1a1a3a,0.6,0.4, 0x3a1a7a,0.5);
+      const f=mkBox(0.12,DH,0.28, 0x1a1a3a,0.6,0.4, locTheme.doorFrameCol,0.5);
       f.position.set(x,y,-L/2); addR(f);
     });
-    const ft=mkBox(DW+0.24,0.12,0.28, 0x1a1a3a,0.6,0.4, 0x3a1a7a,0.5);
+    const ft=mkBox(DW+0.24,0.12,0.28, 0x1a1a3a,0.6,0.4, locTheme.doorFrameCol,0.5);
     ft.position.set(0,DH+0.06,-L/2); addR(ft);
 
     // Sign "SERVER ROOM"
-    const sgn = mkBox(1.4,0.24,0.07, 0x002211,0.5,0, 0x00ff88,2.5);
+    const sgn = mkBox(1.4,0.24,0.07, 0x001a08,0.5,0, locTheme.signCol,2.5);
     sgn.position.set(0,DH+0.36,-L/2+0.12); addR(sgn);
-    ptLight(0x00ff88, 2, 2, 0, DH+0.36, -L/2+0.5);
+    ptLight(locTheme.signCol, 2, 2, 0, DH+0.36, -L/2+0.5);
 
     // Security panel beside door
     const panel = mkBox(0.22,0.45,0.07, 0x111128,0.4,0.5, 0x06b6d4,0.3);
@@ -666,7 +1051,7 @@ const World = (() => {
     scene.add(door); roomObjects.push(door);
 
     // Door stripe
-    const dstripe = mkBox(0.05, DH-0.2, 0.04, 0x7c3aed, 0.1,0, 0x7c3aed, 2);
+    const dstripe = mkBox(0.05, DH-0.2, 0.04, locTheme.accentCol, 0.1,0, locTheme.accentCol, 2);
     dstripe.position.set(DW/2-0.08, DH/2, -L/2+0.09); scene.add(dstripe); roomObjects.push(dstripe);
 
     const handle = mkBox(0.07,0.07,0.30, 0x7070cc,0.2,0.9, 0x9090ee,0.5);
@@ -678,7 +1063,9 @@ const World = (() => {
 
     let opened = false;
     function openDoor() {
-      if (opened) return; opened = true;
+      if (opened) return;
+      if (_doorGate && !_doorGate()) return;  // gate belum terbuka
+      opened = true;
       const pivot = new THREE.Group();
       pivot.position.set(-DW/2, DH/2, -L/2);
       door.position.set(DW/2, 0, 0);
@@ -710,19 +1097,20 @@ const World = (() => {
   // ══════════════════════════════════════════════
   function loadServerRoom(levelData) {
     clearRoom();
-    const W=14, H=4.2, L=28;
+    const srDimMap = {gov:{W:14,H:4.2,L:28},campus:{W:10,H:3.8,L:20},corp:{W:16,H:5.0,L:30},isp:{W:14,H:4.0,L:32}};
+    const {W,H,L} = srDimMap[_curLocId] || {W:14,H:4.2,L:28};
     currentRoom = { bounds: { x0:-W/2, x1:W/2, z0:-L/2, z1:L/2 } };
-    camera.position.set(0, EYE_H, 9); yaw = Math.PI; pitch = 0;
+    camera.position.set(0, EYE_H, L/2-3); yaw = Math.PI; pitch = 0;
 
     const flTex = makeFloorTex(), wlTex = makeWallTex();
 
     // Floor
     const fl = new THREE.Mesh(new THREE.BoxGeometry(W,0.08,L),
-      new THREE.MeshStandardMaterial({ map:flTex, roughness:0.10, metalness:0.88, color:0x9999bb }));
+      new THREE.MeshStandardMaterial({ map:flTex, roughness:0.12, metalness:0.85, color:locTheme.floorColor }));
     fl.position.set(0,-0.04,0); fl.receiveShadow=true; addR(fl);
 
     // Walls
-    const wlMat = new THREE.MeshStandardMaterial({ map:wlTex, roughness:0.85, metalness:0.1 });
+    const wlMat = new THREE.MeshStandardMaterial({ map:wlTex, roughness:0.85, metalness:0.1, color:locTheme.wallColor });
     [[-W/2,H/2,0, 0.12,H,L],[W/2,H/2,0, 0.12,H,L],
      [0,H/2,-L/2, W,H,0.12],[0,H/2,L/2, W,H,0.12]].forEach(([x,y,z,w,h,d])=>{
       const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),wlMat);
@@ -732,33 +1120,34 @@ const World = (() => {
     const ce=mkBox(W,0.08,L, 0x060610,0.9,0);
     ce.position.set(0,H,0); addR(ce);
 
-    // Ceiling lights grid
-    [-9,-5,-1,3,7].forEach(z => {
-      [-3.5,3.5].forEach(xo => {
-        const s=mkBox(0.16,0.04,1.3, 0xffffff,0.1,0, 0xccddff,5);
+    // Ceiling lights — scaled to room
+    const srLightZ = L > 25 ? [-L/3.5, 0, L/3.5] : [-L/3, 0, L/3];
+    const srLightX = W > 12 ? [-W/4, W/4] : [-W/5, W/5];
+    srLightZ.forEach(z => {
+      srLightX.forEach(xo => {
+        const s=mkBox(0.16,0.04,1.3, 0xffffff,0.05,0, 0xeef5ff,4);
         s.position.set(xo,H-0.03,z); addR(s);
+        spot(0xffffff, 20, H*5, xo, H-0.05, z, xo, 0, z);
       });
-      spot(0x8899ff,14,22, 0,H-0.05,z, 0,0,z);
-      ptLight(0x4455bb,1.5,10, 0,0.8,z);
     });
+    addR(new THREE.PointLight(0xaabbff, 3.5, W*2.5)).position.set(0, 2.5, 0);
+    addR(new THREE.PointLight(0x8899cc, 2.0, W*1.5)).position.set(-W/3, 2, 0);
+    addR(new THREE.PointLight(0x8899cc, 2.0, W*1.5)).position.set( W/3, 2, 0);
 
     // Baseboard glow
     [-W/2+0.03,W/2-0.03].forEach(x=>{
-      const b=mkBox(0.03,0.08,L, 0x06b6d4,0.1,0, 0x06b6d4,4.5);
+      const b=mkBox(0.03,0.08,L, locTheme.baseCol,0.1,0, locTheme.baseCol,4.5);
       b.position.set(x,0.04,0); addR(b);
     });
 
-    // Ambient
-    addR(new THREE.AmbientLight(0x2244aa, 4));
-
-    // Server racks — kiri dan kanan, 2 baris
-    for (let z = -10; z <= 10; z += 3.5) {
+    const rackStep = Math.min(4, L/7);
+    const rackPositions = [-rackStep*1.5, -rackStep*0.5, rackStep*0.5, rackStep*1.5].filter(z => Math.abs(z) < L/2-2);
+    rackPositions.forEach(z => {
       buildRack(-W/2+1.7, z, 0);
       buildRack( W/2-1.7, z, Math.PI);
-    }
+    });
 
-    // Overhead cable trays
-    for (let z = -10; z <= 10; z += 7) {
+    for (let z = -L/3; z <= L/3; z += L/5) {
       const tray = mkBox(W*0.55, 0.06, 0.20, 0x222244, 0.5, 0.7);
       tray.position.set(0, H-0.18, z); addR(tray);
     }
@@ -769,9 +1158,12 @@ const World = (() => {
       cable.position.set(x, 0.02, 0); addR(cable);
     });
 
+    // Location-specific SR decorations
+    buildSRDeco(W, H, L);
+
     // Interactive objects
     const srDef = levelData.scenes.serverroom, items = levelData.items;
-    const itemPos = [[-1.5,2],[1.5,2],[0,-1],[-2.5,-4],[2.5,-4],[0,5],[0,-7]];
+    const itemPos = [[-1.5,L/8],[1.5,L/8],[0,-L/12],[-2.5,-L/7],[2.5,-L/7],[0,L/5],[0,-L/4]];
     if (srDef.objects && items) {
       srDef.objects.forEach((obj, i) => {
         const [ix, iz] = itemPos[i] || [0, i - 3];
@@ -780,14 +1172,13 @@ const World = (() => {
     }
 
     // NPCs in server room
-    const srNPCCols = [
-      { shirt: 0x7c3aed, pant: 0x2d1b69, skin: 0xffcc99 },
-      { shirt: 0x059669, pant: 0x064e3b, skin: 0xd4a574 },
-    ];
+    const srNPCCols = locTheme.npcShirts.slice(0,2).map((s,i) => ({
+      shirt: s, pant: locTheme.npcPants[i], skin: locTheme.npcSkins[i]
+    }));
     if (srDef.chars) {
       srDef.chars.forEach((ch, i) => {
         const nc = srNPCCols[i % srNPCCols.length];
-        const cx = W/2-2.8, cz = i * 2.5 - 1.5;
+        const cx = W/2-2.8, cz = i * 2.5;
         makeNPC(cx, 0, cz, nc.shirt, nc.pant, nc.skin, ch.name);
         interactables.push({
           pos: new THREE.Vector3(cx, EYE_H, cz),
@@ -812,6 +1203,17 @@ const World = (() => {
     setTimeout(() => el.classList.add('hidden'), 3100);
   }
 
+  function setDoorGate(fn) { _doorGate = fn; }
+
+  function setLocationTheme(locId) {
+    _curLocId = locId || 'gov';
+    locTheme = LOC_THEMES[_curLocId] || LOC_THEMES.gov;
+    if (ambLight)  ambLight.color.setHex(locTheme.ambientCol);
+    if (hemiLight) { hemiLight.color.setHex(locTheme.hemiSky); hemiLight.groundColor.setHex(locTheme.hemiGround); }
+    if (scene.fog) scene.fog.color.setHex(locTheme.fogCol);
+    scene.background.setHex(locTheme.fogCol);
+  }
+
   function loadRoom(roomId, levelData, doorCb) {
     const ov = document.getElementById('fade-overlay');
     ov.style.opacity = 1;
@@ -831,5 +1233,5 @@ const World = (() => {
     setTimeout(refreshOverlay, 100);
   }
 
-  return { init, loadRoom, markItemFound, releasePointer, showLoc };
+  return { init, loadRoom, markItemFound, releasePointer, showLoc, setLocationTheme, setDoorGate };
 })();
