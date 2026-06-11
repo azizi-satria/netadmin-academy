@@ -36,19 +36,19 @@ const World = (() => {
     renderer.outputEncoding    = THREE.sRGBEncoding;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x05050e);
-    scene.fog = new THREE.FogExp2(0x05050e, 0.032);
+    scene.background = new THREE.Color(0x080818);
+    scene.fog = new THREE.FogExp2(0x080818, 0.018);
 
     camera = new THREE.PerspectiveCamera(80, innerWidth / innerHeight, 0.05, 80);
     camera.position.set(0, EYE_H, 8);
     clock = new THREE.Clock();
 
-    scene.add(new THREE.AmbientLight(0x0a0a22, 1.5));
+    scene.add(new THREE.AmbientLight(0x2233aa, 3.5));
 
     // Bloom post-processing
     const rPass = new THREE.RenderPass(scene, camera);
     const bloom = new THREE.UnrealBloomPass(
-      new THREE.Vector2(innerWidth, innerHeight), 1.1, 0.45, 0.25);
+      new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.4, 0.35);
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(rPass);
     composer.addPass(bloom);
@@ -567,10 +567,10 @@ const World = (() => {
 
     // Ceiling lights
     [-7.5,-3.5,0,3.5,7.5].forEach(z => {
-      const s=mkBox(0.2,0.05,1.1, 0xffffff,0.1,0, 0xaaaaff,3.5);
+      const s=mkBox(0.2,0.05,1.1, 0xffffff,0.1,0, 0xccddff,5);
       s.position.set(0,H-0.03,z); addR(s);
-      spot(0x9999ff,5,12, 0,H-0.1,z, 0,0,z);
-      ptLight(0x4444aa,0.4,4, 0,0.05,z);
+      spot(0xaabbff,12,18, 0,H-0.1,z, 0,0,z);
+      ptLight(0x6677cc,1.2,8, 0,0.5,z);
     });
 
     // Wall accent strips
@@ -735,11 +735,11 @@ const World = (() => {
     // Ceiling lights grid
     [-9,-5,-1,3,7].forEach(z => {
       [-3.5,3.5].forEach(xo => {
-        const s=mkBox(0.16,0.04,1.3, 0xffffff,0.1,0, 0xaaaaff,4.5);
+        const s=mkBox(0.16,0.04,1.3, 0xffffff,0.1,0, 0xccddff,5);
         s.position.set(xo,H-0.03,z); addR(s);
       });
-      spot(0x6677ff,5,18, 0,H-0.05,z, 0,0,z);
-      ptLight(0x2233aa,0.5,8, 0,0.05,z);
+      spot(0x8899ff,14,22, 0,H-0.05,z, 0,0,z);
+      ptLight(0x4455bb,1.5,10, 0,0.8,z);
     });
 
     // Baseboard glow
@@ -749,7 +749,7 @@ const World = (() => {
     });
 
     // Ambient
-    addR(new THREE.AmbientLight(0x000a22, 2));
+    addR(new THREE.AmbientLight(0x2244aa, 4));
 
     // Server racks — kiri dan kanan, 2 baris
     for (let z = -10; z <= 10; z += 3.5) {
