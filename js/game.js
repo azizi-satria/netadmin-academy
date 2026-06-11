@@ -14,6 +14,7 @@ let dialogQueue     = [];
 let dialogIdx       = 0;
 let dialogCallback  = null;
 let objectives      = [];
+let foundItemsData  = [];
 
 // ── Boot ──────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -252,6 +253,7 @@ function loadLevel(idx) {
   document.getElementById('hint-left').textContent = hintsLeft;
 
   objectives = currentLevel.objectives.map(o => ({ ...o, done: false }));
+  foundItemsData = [];
   renderObjectives();
   Terminal.reset();
 
@@ -279,6 +281,7 @@ function loadLevel(idx) {
   // Dialog hanya muncul saat berinteraksi dengan NPC (tekan E)
 
   startTimer();
+  setTimeout(() => showMissionIntro(), 600);
 }
 
 // ── Character click ───────────────────────
@@ -309,6 +312,11 @@ function onItemClick(itemId) {
   World.releasePointer();
   World.markItemFound(itemId);
   addScore(50);
+
+  // Store found item for info panel
+  if (!foundItemsData.find(f => f.id === itemId)) {
+    foundItemsData.push({ id: itemId, icon: item.icon || '🔍', title: item.title, body: item.body, theory: item.theory });
+  }
 
   document.getElementById('ins-ico').textContent   = item.icon || item.emoji || '🔍';
   document.getElementById('ins-title').textContent = applyPlayerVars(item.title);
@@ -360,8 +368,52 @@ function applyPlayerVars(str) {
 
 function gameActive()  { return !document.getElementById('game-screen').classList.contains('hidden'); }
 function isAnyUIOpen() {
-  return ['dialog-box','inspect-box','term-overlay','pause-screen'].some(
+  return ['dialog-box','inspect-box','term-overlay','pause-screen','mission-intro','info-panel'].some(
     id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
+}
+
+function showMissionIntro() {
+  const lv = currentLevel;
+  if (!lv) return;
+  document.getElementById('mi-level').textContent = 'Level ' + (currentLevelIdx + 1);
+  document.getElementById('mi-icon').textContent = lv.badge ? lv.badge.split(' ')[0] : '🎯';
+  document.getElementById('mi-title').textContent = lv.title;
+  document.getElementById('mi-mission').textContent = lv.mission;
+  const ul = document.getElementById('mi-objectives');
+  ul.innerHTML = '';
+  (lv.objectives || []).forEach(o => {
+    const li = document.createElement('li');
+    li.textContent = o.text;
+    ul.appendChild(li);
+  });
+  document.getElementById('mission-intro').classList.remove('hidden');
+}
+function closeMissionIntro() {
+  document.getElementById('mission-intro').classList.add('hidden');
+}
+
+function showInfoPanel() {
+  World.releasePointer();
+  const list = document.getElementById('info-list');
+  const empty = document.getElementById('info-empty');
+  list.innerHTML = '';
+  if (foundItemsData.length === 0) {
+    empty.style.display = '';
+  } else {
+    empty.style.display = 'none';
+    foundItemsData.forEach(item => {
+      const div = document.createElement('div');
+      div.style.cssText = 'border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:.75rem;margin-bottom:.6rem;background:rgba(124,58,237,.06)';
+      div.innerHTML = `<div style="font-weight:700;color:#fff;margin-bottom:.25rem">${item.icon} ${item.title}</div>`
+        + `<p style="color:#aaa;font-size:.8rem;white-space:pre-line;margin:0 0 .35rem">${item.body}</p>`
+        + (item.theory ? `<p style="color:#a855f7;font-size:.75rem;margin:0"><strong>📚</strong> ${item.theory}</p>` : '');
+      list.appendChild(div);
+    });
+  }
+  document.getElementById('info-panel').classList.remove('hidden');
+}
+function closeInfoPanel() {
+  document.getElementById('info-panel').classList.add('hidden');
 }
 
 function renderDialogLine() {
@@ -381,6 +433,7 @@ function renderDialogLine() {
   document.getElementById('dlg-ava').textContent = line.avatar || line.who || '👤';
   document.getElementById('dlg-who').textContent = applyPlayerVars(line.name || '');
   typeWriter('dlg-txt', applyPlayerVars(line.text || ''));
+  if (line.camYaw !== undefined) World.setCamTarget(line.camYaw, line.camPitch ?? 0);
 }
 
 function advanceDialog() {
@@ -499,6 +552,16 @@ function levelComplete() {
   burst.style.animation = '';
 
   document.getElementById('lvl-complete').classList.remove('hidden');
+  const sum = currentLevel.summary;
+  const sumEl = document.getElementById('lc-summary');
+  if (sum && sumEl) {
+    sumEl.classList.remove('hidden');
+    document.getElementById('lc-sum-problem').textContent = sum.problem;
+    document.getElementById('lc-sum-action').textContent  = sum.action;
+    document.getElementById('lc-sum-lesson').textContent  = sum.lesson;
+  } else if (sumEl) {
+    sumEl.classList.add('hidden');
+  }
 }
 
 function nextLevel() {

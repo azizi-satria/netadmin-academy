@@ -112,6 +112,7 @@
       <div class="hud-chip">⏱ <span id="hud-time">00:00</span></div>
       <div class="hud-chip">⭐ <span id="hud-score">0</span></div>
       <button class="hud-hint" onclick="useHint()">💡 <span id="hint-left">3</span></button>
+      <button class="hud-hint" onclick="showPauseMenu()" title="Jeda / Simpan">⏸</button>
     </div>
   </div>
 
@@ -161,7 +162,10 @@
   </div>
 
   <div id="obj-panel">
-    <div class="obj-ttl" onclick="toggleObj()">📋 Misi <span id="obj-tog">▾</span></div>
+    <div class="obj-ttl" style="display:flex;align-items:center;justify-content:space-between;cursor:default">
+      <span onclick="toggleObj()" style="cursor:pointer">📋 Misi <span id="obj-tog">▾</span></span>
+      <button onclick="showInfoPanel()" title="Lihat ulang item yang sudah diperiksa" style="background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#a855f7;border-radius:6px;padding:1px 8px;font-size:.72rem;cursor:pointer;font-weight:700">ℹ️ Info</button>
+    </div>
     <div id="obj-inner">
       <ul id="obj-ul"></ul>
       <button class="obj-term-btn" onclick="openTerm()">💻 Terminal</button>
@@ -199,6 +203,12 @@
       <div class="lc-stat"><span>⭐ Skor</span><b id="lc-sc">0</b></div>
       <div class="lc-stat"><span>⏱ Waktu</span><b id="lc-tm">—</b></div>
       <div class="lc-stat"><span>💡 Hint</span><b id="lc-ht">0x</b></div>
+    </div>
+    <div id="lc-summary" class="hidden" style="margin:.8rem 0 1rem;text-align:left;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:12px;padding:1rem 1.1rem">
+      <div style="font-size:.68rem;color:#a855f7;font-weight:700;letter-spacing:.08em;margin-bottom:.7rem">📚 APA YANG KAMU PELAJARI</div>
+      <div style="margin-bottom:.6rem"><span style="font-size:.7rem;color:#ef4444;font-weight:700">⚠️ MASALAH: </span><span id="lc-sum-problem" style="font-size:.78rem;color:#ccc;line-height:1.55"></span></div>
+      <div style="margin-bottom:.6rem"><span style="font-size:.7rem;color:#10b981;font-weight:700">✅ TINDAKAN: </span><span id="lc-sum-action" style="font-size:.78rem;color:#ccc;line-height:1.55"></span></div>
+      <div><span style="font-size:.7rem;color:#06b6d4;font-weight:700">💡 PELAJARAN: </span><span id="lc-sum-lesson" style="font-size:.78rem;color:#ccc;line-height:1.55"></span></div>
     </div>
     <button class="btn-main" onclick="nextLevel()">Level Berikutnya ▶</button>
   </div>
@@ -341,6 +351,33 @@
 .loc-option.selected{border-color:#a855f7;background:rgba(168,85,247,.18);box-shadow:0 0 20px rgba(168,85,247,.35)}
 .loc-option:active{transform:scale(.98)}
 </style>
+
+<!-- Mission Intro Modal -->
+<div id="mission-intro" class="hidden" style="position:fixed;inset:0;z-index:85;display:flex;align-items:center;justify-content:center;background:rgba(5,5,14,.92);backdrop-filter:blur(8px)">
+  <div style="background:linear-gradient(135deg,#0d0d2a,#1a1040);border:1px solid rgba(124,58,237,.5);border-radius:20px;padding:2rem 2.5rem;max-width:500px;width:92%;text-align:center;box-shadow:0 0 60px rgba(124,58,237,.3)">
+    <div id="mi-level" style="font-size:.72rem;color:#a855f7;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem"></div>
+    <div id="mi-icon" style="font-size:3rem;margin:.3rem 0"></div>
+    <h2 id="mi-title" style="color:#fff;font-size:1.35rem;margin:.2rem 0 .5rem"></h2>
+    <p id="mi-mission" style="color:#bbb;font-size:.88rem;line-height:1.65;margin:0 0 1.1rem;padding:0 .5rem"></p>
+    <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:.9rem 1rem;text-align:left;margin-bottom:1.2rem">
+      <div style="font-size:.7rem;color:#a855f7;font-weight:700;letter-spacing:.06em;margin-bottom:.45rem">📋 OBJEKTIF MISI</div>
+      <ul id="mi-objectives" style="margin:0;padding:0 0 0 1.1rem;color:#ccc;font-size:.8rem;line-height:1.9"></ul>
+    </div>
+    <button onclick="closeMissionIntro()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;padding:.75rem 2rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;width:100%">🚀 Mulai Misi!</button>
+  </div>
+</div>
+
+<!-- Info Panel Modal -->
+<div id="info-panel" class="hidden" style="position:fixed;inset:0;z-index:85;display:flex;align-items:center;justify-content:center;background:rgba(5,5,14,.8);backdrop-filter:blur(4px)">
+  <div style="background:rgba(8,8,24,.97);border:1px solid rgba(124,58,237,.4);border-radius:18px;padding:1.5rem;max-width:480px;width:92%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="color:#fff;margin:0;font-size:1rem;font-weight:700">📂 Catatan Item Diperiksa</h3>
+      <button onclick="closeInfoPanel()" style="background:none;border:none;color:#888;font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="info-list"></div>
+    <p id="info-empty" style="color:#555;text-align:center;font-size:.85rem;margin:1rem 0">Belum ada item yang diperiksa. Dekati objek di server room dan tekan E!</p>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>

@@ -52,10 +52,10 @@ const LEVELS = [
       ],
       char_kak_sari: [
         { avatar: "😎", name: "Kak Sari", text: "Eh, kamu pasti Andi? Halo! Aku Sari. Selamat datang di server room — ini 'jantungnya' IT kota!" },
-        { avatar: "😎", name: "Kak Sari", text: "*menunjuk ke kiri* Di sisi sana — production servers. Handle web, database, email, semua layanan kota yang jalan 24/7." },
-        { avatar: "😎", name: "Kak Sari", text: "LED yang blink-blink hijau itu tanda server aktif. Kalau ada yang merah atau mati, kita harus respons cepat." },
-        { avatar: "😎", name: "Kak Sari", text: "*menunjuk ke kanan* Sisi ini — server backup dan test environment. Penting banget buat disaster recovery." },
-        { avatar: "😎", name: "Kak Sari", text: "Di tengah ada workstation. Dari sini kita monitor semua server via command line Linux. Kamu familiar sama Linux?" },
+        { avatar: "😎", name: "Kak Sari", text: "*menunjuk ke kiri* Di sisi sana — production servers. Handle web, database, email, semua layanan kota yang jalan 24/7.", camYaw: 1.26, camPitch: -0.08 },
+        { avatar: "😎", name: "Kak Sari", text: "LED yang blink-blink hijau itu tanda server aktif. Kalau ada yang merah atau mati, kita harus respons cepat.", camYaw: 1.26, camPitch: -0.1 },
+        { avatar: "😎", name: "Kak Sari", text: "*menunjuk ke kanan* Sisi ini — server backup dan test environment. Penting banget buat disaster recovery.", camYaw: -1.26, camPitch: -0.08 },
+        { avatar: "😎", name: "Kak Sari", text: "Di tengah ada workstation. Dari sini kita monitor semua server via command line Linux. Kamu familiar sama Linux?", camYaw: 0.157, camPitch: -0.15 },
         { avatar: "😅", name: "Andi (Kamu)", text: "Sedikit, Kak... di sekolah baru belajar dasarnya." },
         { avatar: "😎", name: "Kak Sari", text: "Bagus! Di sini kamu langsung praktek nyata. Oke, sekarang aku tunjukin cara kita kerja—" },
         { avatar: "📞", name: "[ ☎  TELPON MASUK — PAK HERI ]", text: "BRRINGGG!! BRRINGGG!! BRRINGGG!!" },
@@ -116,7 +116,13 @@ const LEVELS = [
       "Cek disk dulu: df -h — lihat partisi mana yang penuh.",
       "Bersihkan log sistem: journalctl --vacuum-size=100M",
       "Setelah disk lega, restart Apache: systemctl restart apache2"
-    ]
+    ],
+
+    summary: {
+      problem: "Disk server penuh 100% karena log Apache selama 3 bulan tidak pernah dibersihkan (total 13 GB). Ketika disk penuh, Apache tidak bisa menulis log → service crash → website SMKN mati.",
+      action: "Kamu memeriksa disk (df -h), menemukan log terbesar (du -sh /var/log/*), membersihkan journal log (journalctl --vacuum-size=100M), lalu merestart Apache (systemctl restart apache2).",
+      lesson: "Log server harus rutin dibersihkan. Konfigurasi logrotate otomatis dapat mencegah disk penuh. Monitoring disk usage secara berkala adalah keharusan untuk sysadmin."
+    }
   },
 
   // ══════════════════════════════════════════

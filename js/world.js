@@ -18,6 +18,7 @@ const World = (() => {
   let interactables = [];
   let animFns      = [];
   let _doorGate    = null;   // fn() → true = boleh buka, false = blokir
+  let _targetYaw = null, _targetPitch = null;
 
   let onInteractCb = null;
 
@@ -165,11 +166,12 @@ const World = (() => {
       if (e.code === 'Escape') {
         const pauseEl = document.getElementById('pause-screen');
         if (pauseEl && !pauseEl.classList.contains('hidden')) {
-          // ESC while paused = resume
           if (typeof resumeGame === 'function') resumeGame();
         } else if (document.pointerLockElement) {
           _pauseOnUnlock = true;
           document.exitPointerLock();
+        } else if (gameActive() && !isUIOpen()) {
+          if (typeof showPauseMenu === 'function') showPauseMenu();
         }
       }
     });
@@ -247,6 +249,18 @@ const World = (() => {
   function animate() {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
+    if (_targetYaw !== null && !pointerLocked) {
+      const dy = _targetYaw - yaw;
+      const dp = (_targetPitch ?? 0) - pitch;
+      yaw   += dy * 0.07;
+      pitch += dp * 0.07;
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y = yaw;
+      camera.rotation.x = pitch;
+      if (Math.abs(dy) < 0.008 && Math.abs(dp) < 0.008) {
+        yaw = _targetYaw; pitch = _targetPitch ?? 0; _targetYaw = null; _targetPitch = null;
+      }
+    }
     updateMovement(dt);
     updatePrompt();
     animFns.forEach(fn => fn(clock.elapsedTime, dt));
@@ -1163,7 +1177,17 @@ const World = (() => {
 
     // Interactive objects
     const srDef = levelData.scenes.serverroom, items = levelData.items;
-    const itemPos = [[-1.5,L/8],[1.5,L/8],[0,-L/12],[-2.5,-L/7],[2.5,-L/7],[0,L/5],[0,-L/4]];
+    const hw = (W / 2 - 2.5) * 0.7;
+    const hl = L / 2 - 4;
+    const itemPos = [
+      [-hw, -hl * 0.5],
+      [hw,  -hl * 0.5],
+      [0,    0        ],
+      [-hw * 0.7, hl * 0.5],
+      [hw * 0.7,  hl * 0.5],
+      [0,         -hl * 0.85],
+      [0,          hl * 0.85],
+    ];
     if (srDef.objects && items) {
       srDef.objects.forEach((obj, i) => {
         const [ix, iz] = itemPos[i] || [0, i - 3];
@@ -1205,6 +1229,9 @@ const World = (() => {
 
   function setDoorGate(fn) { _doorGate = fn; }
 
+  function setCamTarget(ty, tp) { _targetYaw = ty; _targetPitch = tp ?? 0; }
+  function clearCamTarget() { _targetYaw = null; _targetPitch = null; }
+
   function setLocationTheme(locId) {
     _curLocId = locId || 'gov';
     locTheme = LOC_THEMES[_curLocId] || LOC_THEMES.gov;
@@ -1233,5 +1260,5 @@ const World = (() => {
     setTimeout(refreshOverlay, 100);
   }
 
-  return { init, loadRoom, markItemFound, releasePointer, showLoc, setLocationTheme, setDoorGate };
+  return { init, loadRoom, markItemFound, releasePointer, showLoc, setLocationTheme, setDoorGate, setCamTarget, clearCamTarget };
 })();
