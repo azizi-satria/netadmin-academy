@@ -183,7 +183,7 @@ const World = (() => {
     if (el) el.style.display = (!pointerLocked && gameActive() && !isUIOpen()) ? 'flex' : 'none';
   }
   function isUIOpen() {
-    return ['dialog-box','inspect-box','term-overlay','pause-screen'].some(
+    return ['dialog-box','inspect-box','term-overlay','pause-screen','mission-intro','info-panel'].some(
       id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
   }
   function gameActive() {
@@ -568,13 +568,15 @@ const World = (() => {
   }
 
   // ══════════════════════════════════════════════
-  // INTERACTIVE ITEM (PC / Monitor / Router dll)
+  // INTERACTIVE ITEM — server room equipment
   // ══════════════════════════════════════════════
   function buildItem(obj, x, z, itemData) {
     const id = obj.id || '';
     const isMonitor = /monitor|browser|display/i.test(id);
     const isRouter  = /router|switch|firewall/i.test(id);
     const isServer  = /server|rack|nas/i.test(id);
+    const isUsb     = /usb/i.test(id);
+    const isNote    = /note|sticky|memo/i.test(id);
 
     const cols = [0x7c3aed,0x06b6d4,0x10b981,0xa855f7,0xf59e0b,0xef4444];
     const col  = cols[Math.abs((id.charCodeAt(0)||0) * 3) % cols.length];
@@ -583,119 +585,179 @@ const World = (() => {
     g.position.set(x, 0, z);
 
     if (isMonitor) {
-      // Monitor Roblox-style
-      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.5,0.12),
-        new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.5, metalness: 0.8 }));
-      stand.position.set(0, 0.85, 0); g.add(stand);
-
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.55,0.06,0.35),
-        new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.5, metalness: 0.7 }));
-      base.position.set(0, 0.6, 0); g.add(base);
-
-      const screen = new THREE.Mesh(new THREE.BoxGeometry(1.1,0.75,0.10),
-        new THREE.MeshStandardMaterial({ color: 0x001122, roughness: 0.1, metalness: 0.4,
-          emissive: new THREE.Color(col), emissiveIntensity: 0.7 }));
-      screen.position.set(0, 1.35, 0); g.add(screen);
-
-      // Screen content lines (pixel art style)
-      for (let li = 0; li < 5; li++) {
-        const line = new THREE.Mesh(new THREE.BoxGeometry(0.7+Math.random()*0.25, 0.04, 0.02),
-          new THREE.MeshStandardMaterial({ color: col, emissive: new THREE.Color(col), emissiveIntensity: 2.5 }));
-        line.position.set(-0.05+Math.random()*0.1, 1.16+li*0.12, 0.06); g.add(line);
+      // KVM Console workstation — desk + monitor + keyboard
+      const deskBody = mkBox(1.85, 0.78, 0.8, 0x08081a, 0.5, 0.4);
+      deskBody.position.set(0, 0.39, 0); g.add(deskBody);
+      const deskTop = mkBox(1.9, 0.05, 0.85, 0x0d0d22, 0.25, 0.65);
+      deskTop.position.set(0, 0.80, 0); g.add(deskTop);
+      // Cable management bar under desk
+      const cbar = mkBox(1.6, 0.05, 0.06, 0x1a1a30, 0.6, 0.3);
+      cbar.position.set(0, 0.12, 0.35); g.add(cbar);
+      // Monitor stand
+      const stand = mkBox(0.09, 0.32, 0.09, 0x1a1a2e, 0.4, 0.7);
+      stand.position.set(0, 0.98, -0.15); g.add(stand);
+      const standBase = mkBox(0.38, 0.04, 0.28, 0x111128, 0.3, 0.6);
+      standBase.position.set(0, 0.83, -0.12); g.add(standBase);
+      // Screen
+      const screen = mkBox(1.18, 0.72, 0.07, 0x000a14, 0.1, 0.3, col, 0.65);
+      screen.position.set(0, 1.50, -0.17); g.add(screen);
+      const bezel = mkBox(1.26, 0.80, 0.05, 0x0d0d1e, 0.4, 0.5);
+      bezel.position.set(0, 1.50, -0.20); g.add(bezel);
+      // Screen content (error log lines)
+      const lineCols = [0xff4444, 0xff4444, 0x00ff88, 0xffffff, 0xffffff, 0xaaaaff];
+      for (let li = 0; li < 6; li++) {
+        const lc = lineCols[li];
+        const ln = mkBox(0.55+Math.random()*0.42, 0.035, 0.02, lc, 0.1, 0, lc, 2.5);
+        ln.position.set(-0.12+Math.random()*0.24, 1.28+li*0.09, -0.12); g.add(ln);
       }
-
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.18,0.83,0.06),
-        new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.5, metalness: 0.7 }));
-      frame.position.set(0, 1.35, -0.04); g.add(frame);
-
-      ptLight(col, 2, 2.5, x, 1.4, z+0.3);
-      animFns.push(t => { screen.material.emissiveIntensity = 0.5+Math.sin(t*0.7)*0.2; });
+      // Power LED on bezel
+      const pwrLed = mkBox(0.035, 0.035, 0.02, 0x00ff88, 0.1, 0, 0x00ff88, 3);
+      pwrLed.position.set(0.58, 1.14, -0.17); g.add(pwrLed);
+      animFns.push(t => { pwrLed.material.emissiveIntensity = 1.5+Math.sin(t*0.8)*1.5; });
+      // Keyboard
+      const kb = mkBox(0.75, 0.025, 0.24, 0x0d0d1e, 0.7, 0.3);
+      kb.position.set(0, 0.825, 0.20); g.add(kb);
+      // Key rows
+      for (let r = 0; r < 3; r++) {
+        const krow = mkBox(0.68, 0.015, 0.05, 0x1a1a30, 0.8, 0.1);
+        krow.position.set(0, 0.838, 0.10+r*0.06); g.add(krow);
+      }
+      // Mouse
+      const mouse = mkBox(0.10, 0.03, 0.16, 0x111128, 0.5, 0.4);
+      mouse.position.set(0.52, 0.825, 0.16); g.add(mouse);
+      ptLight(col, 2.5, 3.5, x, 1.5, z-0.4);
+      animFns.push(t => { screen.material.emissiveIntensity = 0.5+Math.sin(t*0.65)*0.15; });
 
     } else if (isRouter) {
-      // Router / Switch
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.12,0.55),
-        new THREE.MeshStandardMaterial({ color: 0x111120, roughness: 0.5, metalness: 0.7 }));
-      body.position.set(0, 0.8, 0); g.add(body);
-
-      // Antena
-      [-0.3,0,0.3].forEach(xo => {
-        const ant = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.45,0.04),
-          new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.5, metalness: 0.8 }));
-        ant.position.set(xo, 1.1, 0); g.add(ant);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6),
-          new THREE.MeshStandardMaterial({ color: col, emissive: new THREE.Color(col), emissiveIntensity: 3 }));
-        tip.position.set(xo, 1.35, 0); g.add(tip);
-      });
-
-      // LEDs on body
-      for (let li = 0; li < 6; li++) {
-        const led = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.05,0.03),
-          new THREE.MeshStandardMaterial({ color: 0x00ff41, emissive: new THREE.Color(0x00ff41), emissiveIntensity: 3 }));
-        led.position.set(-0.3+li*0.12, 0.8, 0.28); g.add(led);
-        const spd = 1+Math.random()*3, off = Math.random()*Math.PI*2;
-        animFns.push(t => { led.material.emissiveIntensity = 1+Math.sin(t*spd+off)*2; });
+      // Network switch/appliance on rack-shelf
+      // Shelf
+      const shelf = mkBox(1.3, 0.04, 0.55, 0x111128, 0.5, 0.7);
+      shelf.position.set(0, 0.88, 0); g.add(shelf);
+      const shelfBrk = mkBox(1.32, 0.22, 0.05, 0x0d0d20, 0.5, 0.6);
+      shelfBrk.position.set(0, 0.77, 0.27); g.add(shelfBrk);
+      // Switch body (1U)
+      const body = mkBox(1.2, 0.12, 0.44, 0x0c0c1e, 0.35, 0.8);
+      body.position.set(0, 0.98, 0); g.add(body);
+      // Front faceplate
+      const face = mkBox(1.18, 0.10, 0.03, 0x0e0e24, 0.4, 0.5);
+      face.position.set(0, 0.98, 0.23); g.add(face);
+      // Port cluster (8 RJ45 ports)
+      for (let pi = 0; pi < 8; pi++) {
+        const port = mkBox(0.065, 0.055, 0.025, 0x1a1a34, 0.6, 0.1);
+        port.position.set(-0.33+pi*0.095, 0.98, 0.245); g.add(port);
+        const lc = Math.random() > 0.25 ? 0x00ff41 : (Math.random()>0.5?0xffa500:0x333333);
+        const led = mkBox(0.02, 0.02, 0.018, lc, 0.1, 0, lc, 3);
+        led.position.set(-0.33+pi*0.095, 1.018, 0.245); g.add(led);
+        if (lc !== 0x333333) {
+          const spd = 0.4+Math.random()*3, off = Math.random()*Math.PI*2;
+          animFns.push(t => { led.material.emissiveIntensity = 1+Math.sin(t*spd+off)*2; });
+        }
       }
-
-      // Stand
-      const ped = new THREE.Mesh(new THREE.BoxGeometry(0.55,0.78,0.38),
-        new THREE.MeshStandardMaterial({ color: 0x0a0a18, roughness: 0.7, metalness: 0.4 }));
-      ped.position.set(0, 0.39, 0); g.add(ped);
-
-      ptLight(col, 1.5, 2.2, x, 1.0, z);
+      // Status LEDs (PWR, SYS, ACT)
+      [[0x00ff41,0.45],[0x06b6d4,0.53],[0xffaa00,0.61]].forEach(([lc,lx]) => {
+        const sl = mkBox(0.04, 0.04, 0.02, lc, 0.1, 0, lc, 3);
+        sl.position.set(lx, 0.98, 0.245); g.add(sl);
+        const spd=0.5+Math.random()*1.5, off=Math.random()*Math.PI*2;
+        animFns.push(t => { sl.material.emissiveIntensity = 1.5+Math.sin(t*spd+off)*1.5; });
+      });
+      // Mounting ears
+      [-0.62,0.62].forEach(xe => {
+        const ear = mkBox(0.04, 0.14, 0.06, 0x1a1a3a, 0.4, 0.8);
+        ear.position.set(xe, 0.98, 0.22); g.add(ear);
+      });
+      ptLight(0x00ff41, 1.5, 2.5, x, 1.1, z);
 
     } else if (isServer) {
-      // Mini server on pedestal
-      const ped = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.8,0.6),
-        new THREE.MeshStandardMaterial({ color: 0x0a0a18, roughness: 0.7, metalness: 0.4 }));
-      ped.position.set(0, 0.4, 0); g.add(ped);
-
-      const srv = new THREE.Mesh(new THREE.BoxGeometry(0.85,0.38,0.6),
-        new THREE.MeshStandardMaterial({ color: 0x111128, roughness: 0.4, metalness: 0.8 }));
-      srv.position.set(0, 0.99, 0); g.add(srv);
-
-      for (let li = 0; li < 4; li++) {
-        const led = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.04),
-          new THREE.MeshStandardMaterial({ color: col, emissive: new THREE.Color(col), emissiveIntensity: 3 }));
-        led.position.set(-0.3+li*0.2, 0.99, 0.31); g.add(led);
-        const spd=0.5+Math.random()*3, off=Math.random()*Math.PI*2;
-        animFns.push(t => { led.material.emissiveIntensity = 1+Math.sin(t*spd+off)*2.5; });
+      // 2U Tower server with detailed front panel
+      const chassis = mkBox(0.55, 1.0, 0.62, 0x08081c, 0.4, 0.75);
+      chassis.position.set(0, 0.5, 0); g.add(chassis);
+      // Front panel
+      const fp = mkBox(0.53, 0.98, 0.035, 0x0b0b1e, 0.45, 0.5);
+      fp.position.set(0, 0.5, 0.32); g.add(fp);
+      // Drive bays (3 bays)
+      for (let di = 0; di < 3; di++) {
+        const bay = mkBox(0.38, 0.13, 0.025, 0x0f0f28, 0.7, 0.2);
+        bay.position.set(0, 0.78-di*0.18, 0.333); g.add(bay);
+        const bayLed = mkBox(0.035, 0.035, 0.018, col, 0.1, 0, col, 2);
+        bayLed.position.set(0.20, 0.78-di*0.18, 0.333); g.add(bayLed);
+        const spd=0.3+Math.random()*2, off=Math.random()*Math.PI*2;
+        animFns.push(t => { bayLed.material.emissiveIntensity = 1+Math.sin(t*spd+off)*2; });
       }
-      ptLight(col, 2, 2.5, x, 1.1, z);
+      // Status LEDs panel
+      [[0x00ff41,'pwr'],[col,'hdd'],[0x06b6d4,'net'],[0xffaa00,'tmp']].forEach(([lc,_nm],li) => {
+        const sl = mkBox(0.04, 0.04, 0.02, lc, 0.1, 0, lc, 3);
+        sl.position.set(-0.20+li*0.11, 0.20, 0.333); g.add(sl);
+        const spd=0.4+Math.random()*1.5, off2=Math.random()*Math.PI*2;
+        animFns.push(t => { sl.material.emissiveIntensity = 1.5+Math.sin(t*spd+off2)*1.5; });
+      });
+      // Power button (round)
+      const pwrBtn = mkBox(0.07, 0.07, 0.025, 0x1a1a34, 0.3, 0.4);
+      pwrBtn.position.set(0.18, 0.22, 0.333); g.add(pwrBtn);
+      const pwrRing = mkBox(0.09, 0.09, 0.018, col, 0.1, 0, col, 2.5);
+      pwrRing.position.set(0.18, 0.22, 0.335); g.add(pwrRing);
+      // Ventilation slots top
+      for (let vi = 0; vi < 5; vi++) {
+        const slot = mkBox(0.45, 0.015, 0.04, 0x050510, 0.9, 0);
+        slot.position.set(0, 0.88+vi*0.025, 0.31); g.add(slot);
+      }
+      ptLight(col, 2.2, 3, x, 0.8, z+0.5);
+
+    } else if (isUsb) {
+      // USB drive on a small workstation tray
+      const tray = mkBox(0.55, 0.04, 0.40, 0x0a0a1e, 0.4, 0.5);
+      tray.position.set(0, 0.80, 0); g.add(tray);
+      const trayFace = mkBox(0.55, 0.10, 0.03, 0x080818, 0.5, 0.4);
+      trayFace.position.set(0, 0.75, 0.21); g.add(trayFace);
+      // USB stick
+      const usbBody = mkBox(0.08, 0.035, 0.22, 0x1a5fa0, 0.35, 0.3);
+      usbBody.position.set(0, 0.825, 0); g.add(usbBody);
+      const usbCap = mkBox(0.085, 0.04, 0.06, 0x2277cc, 0.3, 0.4);
+      usbCap.position.set(0, 0.825, -0.09); g.add(usbCap);
+      const usbLed = mkBox(0.02, 0.02, 0.015, col, 0.1, 0, col, 3);
+      usbLed.position.set(0, 0.826, 0.09); g.add(usbLed);
+      animFns.push(t => { usbLed.material.emissiveIntensity = 2+Math.sin(t*3)*1.5; });
+      // Label
+      const label = mkBox(0.06, 0.02, 0.14, 0xeeeecc, 0.9, 0);
+      label.position.set(0, 0.838, 0.01); g.add(label);
+      ptLight(col, 1.5, 2, x, 0.9, z);
+
+    } else if (isNote) {
+      // Sticky note / paper on a small shelf
+      const shelf2 = mkBox(0.55, 0.04, 0.40, 0x0a0a1e, 0.4, 0.5);
+      shelf2.position.set(0, 0.78, 0); g.add(shelf2);
+      // Yellow sticky note
+      const note = mkBox(0.30, 0.02, 0.24, 0xfff176, 0.9, 0);
+      note.position.set(0, 0.80, 0); g.add(note);
+      // Handwritten lines on note
+      [[0xaaaaaa,0,0],[-0.02,0.02,0],[0.01,-0.02,0]].forEach(([lc,ox,oz],i) => {
+        const nline = mkBox(0.20-i*0.04, 0.008, 0.005, typeof lc==='number'?lc:0x888888, 0.95, 0);
+        nline.position.set(ox||0, 0.812, -0.06+i*0.06+(oz||0)); g.add(nline);
+      });
+      ptLight(0xfff176, 1.2, 1.8, x, 0.9, z);
 
     } else {
-      // Generic PC tower
-      const tower = new THREE.Mesh(new THREE.BoxGeometry(0.5,1.0,0.55),
-        new THREE.MeshStandardMaterial({ color: 0x101024, roughness: 0.5, metalness: 0.7 }));
-      tower.position.set(0, 0.5, 0); g.add(tower);
-
-      // PC stripe
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.52,0.06,0.56),
-        new THREE.MeshStandardMaterial({ color: col, emissive: new THREE.Color(col), emissiveIntensity: 2 }));
-      stripe.position.set(0, 0.72, 0); g.add(stripe);
-
-      // Power button
-      const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.03,8),
-        new THREE.MeshStandardMaterial({ color: col, emissive: new THREE.Color(col), emissiveIntensity: 3 }));
-      btn.position.set(0.22, 0.9, 0.28); btn.rotation.x = Math.PI/2; g.add(btn);
-
-      // Disk drive slot
-      const slot = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.04,0.02),
-        new THREE.MeshStandardMaterial({ color: 0x333355, roughness: 0.8 }));
-      slot.position.set(0, 0.6, 0.27); g.add(slot);
-
-      ptLight(col, 2, 2.5, x, 1.1, z+0.4);
-      animFns.push(t => { stripe.material.emissiveIntensity = 1.5+Math.sin(t*1.8)*0.5; });
+      // Generic rack-mount appliance (1U)
+      const shelf3 = mkBox(0.65, 0.04, 0.60, 0x0a0a1a, 0.5, 0.5);
+      shelf3.position.set(0, 0.88, 0); g.add(shelf3);
+      const chassis2 = mkBox(1.30, 0.16, 0.55, 0x0a0a1c, 0.35, 0.8);
+      chassis2.position.set(0, 0.98, 0); g.add(chassis2);
+      const face2 = mkBox(1.28, 0.14, 0.03, 0x0d0d22, 0.45, 0.5);
+      face2.position.set(0, 0.98, 0.285); g.add(face2);
+      for (let di = 0; di < 3; di++) {
+        const bay2 = mkBox(0.28, 0.09, 0.02, 0x111130, 0.7, 0.2);
+        bay2.position.set(-0.38+di*0.28, 0.98, 0.295); g.add(bay2);
+      }
+      [[0x00ff41,0.42],[col,0.50],[0x06b6d4,0.58]].forEach(([lc,lx]) => {
+        const sl2 = mkBox(0.04, 0.04, 0.02, lc, 0.1, 0, lc, 3);
+        sl2.position.set(lx, 0.98, 0.295); g.add(sl2);
+        const spd=0.5+Math.random()*2, off=Math.random()*Math.PI*2;
+        animFns.push(t => { sl2.material.emissiveIntensity = 1.5+Math.sin(t*spd+off)*1.5; });
+      });
+      ptLight(col, 2, 2.5, x, 1.1, z);
     }
-
-    // Glowing base platform
-    const platform = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.06, 0.8),
-      new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.6,
-        emissive: new THREE.Color(col), emissiveIntensity: 0.6 }));
-    platform.position.set(0, 0.03, 0); g.add(platform);
 
     addR(g);
 
-    // Register interactable
     interactables.push({
       pos: new THREE.Vector3(x, EYE_H, z),
       itype: 'item', iid: obj.id,
@@ -1175,18 +1237,17 @@ const World = (() => {
     // Location-specific SR decorations
     buildSRDeco(W, H, L);
 
-    // Interactive objects
+    // Interactive objects — posisi di sepanjang dinding dekat rak
     const srDef = levelData.scenes.serverroom, items = levelData.items;
-    const hw = (W / 2 - 2.5) * 0.7;
-    const hl = L / 2 - 4;
+    const wallX = W / 2 - 3.2;
     const itemPos = [
-      [-hw, -hl * 0.5],
-      [hw,  -hl * 0.5],
-      [0,    0        ],
-      [-hw * 0.7, hl * 0.5],
-      [hw * 0.7,  hl * 0.5],
-      [0,         -hl * 0.85],
-      [0,          hl * 0.85],
+      [-wallX, -L * 0.22],  // kiri belakang
+      [ wallX, -L * 0.22],  // kanan belakang
+      [ 0,     -L * 0.08],  // tengah (console workstation)
+      [-wallX,  L * 0.08],  // kiri tengah
+      [ wallX,  L * 0.08],  // kanan tengah
+      [ 0,      L * 0.22],  // tengah depan
+      [-wallX,  L * 0.26],  // kiri depan
     ];
     if (srDef.objects && items) {
       srDef.objects.forEach((obj, i) => {

@@ -15,6 +15,7 @@ let dialogIdx       = 0;
 let dialogCallback  = null;
 let objectives      = [];
 let foundItemsData  = [];
+let _sariIntroDone  = false;
 
 // ── Boot ──────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -254,6 +255,7 @@ function loadLevel(idx) {
 
   objectives = currentLevel.objectives.map(o => ({ ...o, done: false }));
   foundItemsData = [];
+  _sariIntroDone = false;
   renderObjectives();
   Terminal.reset();
 
@@ -290,18 +292,45 @@ let _lobbyGateDone = false;
 function onCharClick(charId) {
   World.releasePointer();
   const key = 'char_' + charId.replace(/-/g, '_');
-  const dlg = currentLevel.dialogs[key] || currentLevel.dialogs['intro'];
+  const isPakHeri = charId.includes('pak-heri') || charId.includes('pak_heri');
+  const isKakSari = charId.includes('kak-sari') || charId.includes('kak_sari');
+
+  let dlg;
+  if (isKakSari && _sariIntroDone) {
+    // Sari sudah intro — tampilkan petunjuk, bukan dialog awal
+    dlg = currentLevel.dialogs['char_kak_sari_followup']
+       || buildSariHintDialog();
+  } else {
+    dlg = currentLevel.dialogs[key] || currentLevel.dialogs['intro'];
+  }
   if (!dlg) return;
 
-  // Pak Heri = gate keeper — setelah dialog selesai, pintu server room terbuka
-  const isPakHeri = charId.includes('pak-heri') || charId.includes('pak_heri');
   const cb = isPakHeri ? () => {
     _lobbyGateDone = true;
     showNotif('✅ Sekarang kamu bisa masuk ke server room!');
-    World.setDoorGate(null);   // hapus gate setelah terpenuhi
+    World.setDoorGate(null);
+  } : isKakSari && !_sariIntroDone ? () => {
+    _sariIntroDone = true;
+    setTimeout(() => {
+      if (gameActive() && !isAnyUIOpen()) document.getElementById('c').requestPointerLock();
+    }, 200);
   } : null;
 
   showDialog(dlg, cb);
+}
+
+function buildSariHintDialog() {
+  const undone = objectives.filter(o => !o.done);
+  if (undone.length === 0) {
+    return [{ avatar: '😎', name: 'Kak Sari', text: 'Sudah selesai semua! Kamu keren banget! 🎉' }];
+  }
+  const hints = (currentLevel.hints || []);
+  const lines = [
+    { avatar: '😎', name: 'Kak Sari', text: 'Butuh bantuan? Oke, ini petunjuknya untuk misi ini:' },
+    ...hints.map(h => ({ avatar: '😎', name: 'Kak Sari', text: h })),
+    { avatar: '😎', name: 'Kak Sari', text: `Sisa ${undone.length} tugas lagi. Kamu pasti bisa! 💪` }
+  ];
+  return lines;
 }
 
 // ── Item click ────────────────────────────
@@ -390,6 +419,9 @@ function showMissionIntro() {
 }
 function closeMissionIntro() {
   document.getElementById('mission-intro').classList.add('hidden');
+  setTimeout(() => {
+    if (gameActive() && !isAnyUIOpen()) document.getElementById('c').requestPointerLock();
+  }, 300);
 }
 
 function showInfoPanel() {
