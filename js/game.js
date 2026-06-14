@@ -339,11 +339,10 @@ function onItemClick(itemId) {
   if (!item) return;
 
   World.releasePointer();
-  World.markItemFound(itemId);
-  addScore(50);
 
-  // Store found item for info panel
+  // Skor & tracking hanya saat pertama kali diperiksa
   if (!foundItemsData.find(f => f.id === itemId)) {
+    addScore(50);
     foundItemsData.push({ id: itemId, icon: item.icon || '🔍', title: item.title, body: item.body, theory: item.theory });
   }
 
@@ -404,6 +403,8 @@ function isAnyUIOpen() {
 function showMissionIntro() {
   const lv = currentLevel;
   if (!lv) return;
+  World.releasePointer();
+  document.getElementById('click-to-start').style.display = 'none';
   document.getElementById('mi-level').textContent = 'Level ' + (currentLevelIdx + 1);
   document.getElementById('mi-icon').textContent = lv.badge ? lv.badge.split(' ')[0] : '🎯';
   document.getElementById('mi-title').textContent = lv.title;

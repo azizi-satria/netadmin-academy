@@ -756,12 +756,27 @@ const World = (() => {
       ptLight(col, 2, 2.5, x, 1.1, z);
     }
 
+    // Label plate melayang di atas item — bantu siswa kenali peralatan
+    const labelText = itemData ? itemData.title : (obj.label || obj.id);
+    const typeTag = isMonitor ? 'KVM CONSOLE' : isRouter ? 'NETWORK SWITCH' :
+                    isServer  ? 'SERVER UNIT'  : isUsb   ? 'USB STORAGE'   :
+                    isNote    ? 'CATATAN'       : 'APPLIANCE';
+    const labelW = Math.max(0.8, labelText.length * 0.068 + 0.2);
+    const plate = mkBox(labelW, 0.18, 0.04, 0x06050f, 0.7, 0, col, 0.9);
+    plate.position.set(0, 2.35, 0); g.add(plate);
+    const tagBg = mkBox(0.42, 0.10, 0.03, col, 0.2, 0, col, 1.5);
+    tagBg.position.set(-(labelW/2-0.23), 2.35, 0.02); g.add(tagBg);
+    // Garis dekorasi bawah plate
+    const deco = mkBox(labelW, 0.025, 0.025, col, 0.1, 0, col, 3);
+    deco.position.set(0, 2.24, 0); g.add(deco);
+    ptLight(col, 0.5, 1.5, x, 2.4, z);
+
     addR(g);
 
     interactables.push({
       pos: new THREE.Vector3(x, EYE_H, z),
       itype: 'item', iid: obj.id,
-      label: itemData ? itemData.title : (obj.label || obj.id)
+      label: labelText
     });
   }
 
@@ -1263,7 +1278,9 @@ const World = (() => {
     if (srDef.chars) {
       srDef.chars.forEach((ch, i) => {
         const nc = srNPCCols[i % srNPCCols.length];
-        const cx = W/2-2.8, cz = i * 2.5;
+        // Tempatkan NPC di pojok kanan dekat pintu masuk (z positif = sisi masuk)
+        const cx = W/2 - 3.2;
+        const cz = L/2 - 3.5 - i * 2.8;
         makeNPC(cx, 0, cz, nc.shirt, nc.pant, nc.skin, ch.name);
         interactables.push({
           pos: new THREE.Vector3(cx, EYE_H, cz),
