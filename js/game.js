@@ -16,6 +16,10 @@ let dialogCallback  = null;
 let objectives      = [];
 let foundItemsData  = [];
 let _sariIntroDone  = false;
+let livesLeft       = 3;
+let wrongCmdStreak  = 0;
+let _tutorialDone   = false;
+let _tutStep        = 0;
 
 // ── Boot ──────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -229,6 +233,8 @@ function showLocationBrief(loc) {
 function startGame() {
   currentLevelIdx = 0;
   score = 0;
+  livesLeft = 3;
+  _tutorialDone = false;
   document.getElementById('hud-score').textContent = score;
   document.getElementById('main-menu').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
@@ -252,10 +258,12 @@ function loadLevel(idx) {
   document.getElementById('hud-ms').textContent    = applyPlayerVars(currentLevel.mission);
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hint-left').textContent = hintsLeft;
+  document.getElementById('hud-lives').textContent = livesLeft;
 
   objectives = currentLevel.objectives.map(o => ({ ...o, done: false }));
   foundItemsData = [];
   _sariIntroDone = false;
+  wrongCmdStreak = 0;
   renderObjectives();
   Terminal.reset();
 
@@ -396,7 +404,7 @@ function applyPlayerVars(str) {
 
 function gameActive()  { return !document.getElementById('game-screen').classList.contains('hidden'); }
 function isAnyUIOpen() {
-  return ['dialog-box','inspect-box','term-overlay','pause-screen','mission-intro','info-panel'].some(
+  return ['dialog-box','inspect-box','term-overlay','pause-screen','mission-intro','info-panel','tutorial-overlay','game-over'].some(
     id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
 }
 
@@ -420,9 +428,14 @@ function showMissionIntro() {
 }
 function closeMissionIntro() {
   document.getElementById('mission-intro').classList.add('hidden');
-  setTimeout(() => {
-    if (gameActive() && !isAnyUIOpen()) document.getElementById('c').requestPointerLock();
-  }, 300);
+  // Tampilkan tutorial hanya di level pertama, pertama kali main
+  if (currentLevelIdx === 0 && !_tutorialDone) {
+    setTimeout(startTutorial, 300);
+  } else {
+    setTimeout(() => {
+      if (gameActive() && !isAnyUIOpen()) document.getElementById('c').requestPointerLock();
+    }, 300);
+  }
 }
 
 function showInfoPanel() {
@@ -610,4 +623,113 @@ function nextLevel() {
   }
   document.getElementById('lvl-complete').classList.add('hidden');
   loadLevel(currentLevelIdx);
+}
+
+// ── Lives System ──────────────────────────
+function loseLife(reason) {
+  livesLeft--;
+  document.getElementById('hud-lives').textContent = livesLeft;
+  wrongCmdStreak = 0;
+
+  const el = document.getElementById('hud-lives-chip');
+  if (el) {
+    el.style.transform = 'scale(1.4)';
+    el.style.color = '#ff2222';
+    setTimeout(() => { el.style.transform = ''; el.style.color = '#ef4444'; }, 400);
+  }
+
+  if (livesLeft <= 0) {
+    showGameOver(reason);
+  } else {
+    showNotif(`❤️ Nyawa tersisa ${livesLeft} — ${reason}`);
+  }
+}
+
+function showGameOver(reason) {
+  stopTimer();
+  World.releasePointer();
+  document.getElementById('go-msg').textContent =
+    `${reason}\n\nKamu kehabisan nyawa di Level ${currentLevelIdx + 1}. Jangan menyerah — coba lagi!`;
+  document.getElementById('game-over').classList.remove('hidden');
+}
+
+function retryLevel() {
+  livesLeft = 3;
+  document.getElementById('game-over').classList.add('hidden');
+  loadLevel(currentLevelIdx);
+}
+
+// Panggil dari terminal.js ketika command salah
+function onWrongCommand() {
+  wrongCmdStreak++;
+  if (wrongCmdStreak >= 3) {
+    loseLife('3 command salah berturut-turut — baca petunjuk Kak Sari!');
+  }
+}
+
+// Reset streak saat command benar
+function onCorrectCommand() {
+  wrongCmdStreak = 0;
+}
+
+// ── Tutorial System ───────────────────────
+const TUTORIAL_STEPS = [
+  { icon: '🎮', text: 'Selamat datang di NetAdmin Academy! Ini tutorial singkat untuk pemain baru. Kamu bisa lewati kapan saja.', pos: 'center' },
+  { icon: '🖱️', text: 'Klik area game lalu gerakkan mouse untuk melihat sekeliling. Pointer akan terkunci — tekan ESC untuk melepasnya.', pos: 'center', arrow: 'canvas' },
+  { icon: '⌨️', text: 'Gunakan W A S D untuk berjalan. Dekati NPC (orang) atau item di server room.', pos: 'bottom-left' },
+  { icon: '🔑', text: 'Saat dekat NPC atau peralatan, tekan tombol E untuk berinteraksi. Lihat petunjuk [E] yang muncul di tengah layar.', pos: 'bottom-left', arrow: 'interact-prompt' },
+  { icon: '💻', text: 'Buka terminal dari tombol di panel Misi (kanan atas). Ketik command Linux untuk menyelesaikan tugas. Salah 3× = kehilangan nyawa!', pos: 'top-right', arrow: 'obj-panel' },
+  { icon: '❤️', text: 'Kamu punya 3 nyawa per level. Jika habis, kamu bisa coba ulang level tersebut. Gunakan hint 💡 jika bingung. Selamat bermain!', pos: 'center' },
+];
+
+function startTutorial() {
+  if (_tutorialDone) return;
+  _tutStep = 0;
+  renderTutStep();
+  document.getElementById('tutorial-overlay').classList.remove('hidden');
+}
+
+function renderTutStep() {
+  const step = TUTORIAL_STEPS[_tutStep];
+  if (!step) { skipTutorial(); return; }
+
+  document.getElementById('tut-step-badge').textContent = `TUTORIAL ${_tutStep + 1}/${TUTORIAL_STEPS.length}`;
+  document.getElementById('tut-icon').textContent = step.icon;
+  document.getElementById('tut-text').textContent = step.text;
+
+  const box = document.getElementById('tut-box');
+  const arrow = document.getElementById('tut-arrow');
+  arrow.style.display = 'none';
+
+  // Posisikan kotak tutorial
+  if (step.pos === 'center') {
+    box.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#0d0d2a,#1a1040);border:2px solid #7c3aed;border-radius:16px;padding:1.1rem 1.4rem;max-width:320px;box-shadow:0 0 40px rgba(124,58,237,.5);pointer-events:all';
+  } else if (step.pos === 'bottom-left') {
+    box.style.cssText = 'position:absolute;bottom:140px;left:20px;background:linear-gradient(135deg,#0d0d2a,#1a1040);border:2px solid #7c3aed;border-radius:16px;padding:1.1rem 1.4rem;max-width:300px;box-shadow:0 0 40px rgba(124,58,237,.5);pointer-events:all';
+  } else if (step.pos === 'top-right') {
+    box.style.cssText = 'position:absolute;top:80px;right:20px;background:linear-gradient(135deg,#0d0d2a,#1a1040);border:2px solid #7c3aed;border-radius:16px;padding:1.1rem 1.4rem;max-width:300px;box-shadow:0 0 40px rgba(124,58,237,.5);pointer-events:all';
+  }
+
+  // Tampilkan arrow jika ada target elemen
+  if (step.arrow) {
+    const target = document.getElementById(step.arrow);
+    if (target) {
+      const r = target.getBoundingClientRect();
+      arrow.style.display = 'block';
+      arrow.style.left = (r.left + r.width/2 - 16) + 'px';
+      arrow.style.top  = (r.bottom + 4) + 'px';
+    }
+  }
+}
+
+function tutNext() {
+  _tutStep++;
+  if (_tutStep >= TUTORIAL_STEPS.length) { skipTutorial(); return; }
+  renderTutStep();
+}
+
+function skipTutorial() {
+  _tutorialDone = true;
+  document.getElementById('tutorial-overlay').classList.add('hidden');
+  document.getElementById('tut-arrow').style.display = 'none';
 }

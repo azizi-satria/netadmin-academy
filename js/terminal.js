@@ -491,6 +491,7 @@ const Terminal = (() => {
     if (!data) {
       printLine(`bash: ${raw}: command not found`, 'e');
       printLine("Ketik 'help' untuk bantuan.", 'w');
+      if (typeof onWrongCommand === 'function') onWrongCommand();
       return;
     }
 
@@ -510,6 +511,7 @@ const Terminal = (() => {
     const delay = data.out.length * D + 120;
     if (data.obj)  setTimeout(() => completeObjective(data.obj),  delay);
     if (data.objs) data.objs.forEach(id => setTimeout(() => completeObjective(id), delay));
+    if (typeof onCorrectCommand === 'function') onCorrectCommand();
   }
 
   function printLine(text, type) {
